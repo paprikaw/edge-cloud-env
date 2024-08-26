@@ -1,0 +1,16 @@
+{
+    "client": [
+        {
+            "data-compression-service": [
+                {
+                    "detection-service": []
+                }
+            ]
+        }
+    ],
+    "data-compression-service": [
+        {
+            "db-service": []
+        }
+    ]
+}

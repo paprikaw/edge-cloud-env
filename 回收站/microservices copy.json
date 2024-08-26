@@ -1,0 +1,32 @@
+{
+    "data-compression": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1Gi",
+        "replica": 3,
+        "external_services": [
+            {
+                "services": [
+                    "db"
+                ]
+            },
+            {
+                "services": [
+                    "detection-service"
+                ]
+            }
+        ]
+    },
+    "db": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1Gi",
+        "external_services": [{}],
+        "replica": 1
+    },
+    "detection-service": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1Gi",
+        "external_services": [{}],
+        "replica": 3
+    }
+
+}

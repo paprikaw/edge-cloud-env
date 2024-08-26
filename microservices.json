@@ -1,0 +1,30 @@
+{
+    "client": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1G",
+        "replica": 1,
+        "external_services": [ "data-compression-service"],
+        "type": "client"
+    },
+    "data-compression-service": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1G",
+        "replica": 3,
+        "external_services": [ "db-service", "detection-service"],
+        "type": "service"
+    },
+    "db-service": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1G",
+        "external_services": {},
+        "replica": 1,
+        "type": "service"
+    },
+    "detection-service": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1G",
+        "external_services": {},
+        "replica": 3,
+        "type": "service"
+    }
+}

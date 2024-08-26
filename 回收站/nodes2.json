@@ -1,0 +1,18 @@
+{
+    "cloud": {
+        "node_count_range": [1, 2],
+        "nodeType": ["nodeA"],
+        "isCloud": true,
+        "cpu_availability": [100, 50, 30, 10],
+        "memory_availability": ["16G", "32G"],
+        "bandwidth": "500M"
+    },
+    "edge": {
+        "node_count_range": [1, 2],
+        "nodeType": ["nodeB","nodeC"],
+        "isCloud": false,
+        "cpu_availability": [4, 8],
+        "memory_availability": ["4G", "8G", "16G", "32G"],
+        "bandwidth": "200M"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "microservices": {
+        "Client": {
+            "internal_execution_time": {
+                "A": 0,
+                "B": 0,
+                "C": 0
+            }
+        },
+        "data-compression-service": {
+            "internal_execution_time": {
+                "A": 30,
+                "B": 35,
+                "C": 40
+            }
+        },
+        "detection-service": {
+            "internal_execution_time": {
+                "A": 60,
+                "B": 65,
+                "C": 70
+            }
+        },
+        "db-service": {
+            "internal_execution_time": {
+                "A": 10,
+                "B": 12,
+                "C": 15
+            }
+        }
+    }
+}

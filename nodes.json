@@ -1,0 +1,137 @@
+{
+    "node_type": {
+        "cloudInstance": {
+            "cpu_type": "A",
+            "bandwidth": "500m"
+        },
+        "edgeNode-a": {
+            "cpu_type": "B",
+            "bandwidth": "200m"
+        },
+        "edgeNode-b": {
+            "cpu_type": "C",
+            "bandwidth": "200m"
+        },
+        "client": {
+            "cpu_type": "D",
+            "bandwidth": "200m"
+        }
+    },
+    "latency": {
+        "edge": {
+            "cloud": "200ms",
+            "client": "10ms",
+            "edge": "5ms"
+        },
+        "client": {
+            "cloud": "200ms",
+            "client": "5ms",
+            "edge": "10ms"
+        },
+        "cloud": {
+            "cloud": "5ms",
+            "client": "200ms",
+            "edge": "200ms"
+        }
+    },
+    "cluster_setup": {
+        "cloud": {
+            "cloudInstance": {
+                "count_range": [
+                    1,
+                    1
+                ],
+                "cpu_availability": [
+                    "2",
+                    "4",
+                    "8",
+                    "16"
+                ],
+                "memory_availability": [
+                    "8G",
+                    "16G"
+                ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0.2",
+                    "0.5",
+                    "0.8",
+                    "0.9",
+                    "1"
+                ]
+            }
+        },
+        "edge": {
+            "edgeNode-a": {
+                "count_range": [
+                    1,
+                    1
+                ],
+                "cpu_availability": [
+                    "500m",
+                    "2",
+                    "4",
+                    "8",
+                    "16"
+                ],
+                "memory_availability": [
+                    "512M",
+                    "4G",
+                    "8G",
+                    "16G"
+                ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0.2",
+                    "0.5",
+                    "0.8",
+                    "0.9",
+                    "1"
+                ]
+            },
+            "edgeNode-b": {
+                "count_range": [
+                    1,
+                    1
+                ],
+                "cpu_availability": [
+                    "500m",
+                    "1",
+                    "2",
+                    "4",
+                    "8"
+                ],
+                "memory_availability": [
+                    "512M",
+                    "4G",
+                    "8G"
+                ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0.2",
+                    "0.5",
+                    "0.8",
+                    "0.9",
+                    "1"
+                ]
+            }
+        },
+        "client": {
+            "client": {
+                "count_range": [
+                    1,
+                    1
+                ],
+                "cpu_availability": [
+                    "16"
+                ],
+                "memory_availability": [
+                    "16G"
+                ],
+                "bandwidth_utilization": [
+                    "0"
+                ]
+            }
+        }
+    }
+}

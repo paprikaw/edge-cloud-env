@@ -1,0 +1,4 @@
+- application.py: 微服务应用
+- microservice: 微服务
+- node: 一个计算实例
+- simulator: 整个微服务的模拟器# edge-cloud-env

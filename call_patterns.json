@@ -1,0 +1,50 @@
+{
+    "detection": {
+        "client": "client",
+        "call-path": [
+            {
+                "data-compression-service": {
+                    "data-size": "2M",
+                    "execution-time": {
+                        "A": "20ms",
+                        "B": "40ms",
+                        "C": "50ms"
+                    },
+                    "call-path": [
+                        {
+                            "detection-service": {
+                                "data-size": "1M",
+                                "execution-time": {
+                                    "A": "200ms",
+                                    "B": "300ms",
+                                    "C": "400ms"
+                                },
+                                "call-path": []
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "rps": 50,
+        "qos": "300ms"
+    },
+    "data-persistent": {
+        "client": "data-compression-service",
+        "call-path": [
+            {
+                "db-service": {
+                    "data-size": "2M",
+                    "execution-time": {
+                        "A": "10ms",
+                        "B": "15ms",
+                        "C": "20ms"
+                    },
+                    "call-path": []
+                }
+            }
+        ],
+        "rps": 5,
+        "qos": "500ms"
+    }
+}
