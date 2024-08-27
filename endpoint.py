@@ -16,7 +16,7 @@ class Endpoint:
         client = self.config.get("client", "")
 
         # 初始化根 Call 对象
-        root_call = Call(client)
+        root_call = Call(client, is_client=True)
         self.call_groups = root_call
 
         # 递归处理调用路径

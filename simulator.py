@@ -120,6 +120,14 @@ class MicroserviceSimulator:
         assert(ms_app.deployState == "Ongoing")
         return
 
+    def reset_ms(self, ms_app_name: str):
+        """重置微服务实例"""
+        ms_app = self.ms_apps[ms_app_name]
+        for ms_instance in ms_app.instances.values():
+            self.undeploy_ms(ms_app_name, ms_instance.id)
+        ms_app.deployState = "Undeployed"
+        return
+
     def deploy_ms(self, ms_app_name: str, instance_id: str, node_id: str):
         """将单个微服务部署到集群中"""
         ms_app = self.ms_apps[ms_app_name]
@@ -224,7 +232,7 @@ class MicroserviceSimulator:
                 cpu_type = self._get_instance_node(ms_app_id, instance_id).cpu_type
                 execution_time = call.execution_time.get(cpu_type, 0)
                 if execution_time == 0:
-                    assert call.instance_id == "client"
+                    assert call.is_client == True 
                 avg_execution_latency += execution_time 
             avg_execution_latency /= len(replica_set)
 
@@ -269,8 +277,13 @@ class MicroserviceSimulator:
         instance = ms_app.get_instance(instance_id)
         node = self.nodes[node_id]
         return node.check_resource(instance.cpu_requests, instance.memory_requests)
-    def get_all_instances(self)->List[int]:
-        return [instance.id for instance in self.simulator.ms_apps[self.ms_app_name].instances.values()]
+    def get_all_instances(self) -> List[int]:
+        all_service_instances = []
+        for app in self.ms_apps.values():
+            service_instances = [instance.id for instance in app.instances.values() if instance.type == "service"]
+            all_service_instances.extend(service_instances)
+        return all_service_instances
+
 
 if __name__ == "__main__":
     profiling_path = 'default_profile.json'
@@ -340,9 +353,12 @@ if __name__ == "__main__":
 
     # 测试 8: 计算端到端延迟
     print("\nTest 8: 计算端到端延迟")
-    endpoint_id = "detection"  # 假设这个 endpoint ID 存在于 calls.json 中
+    endpoint_id = "data-persistent"  # 假设这个 endpoint ID 存在于 calls.json 中
     end_to_end_latency = env.end_to_end_latency(ms_name, endpoint_id)
     print(f"End-to-End Latency for {endpoint_id}: {end_to_end_latency} ms")
 
     print("\nTest 9: 验证get_endpoint api")
     print(env.get_endpoints())
+
+    print("\nTest 10: 验证get_all_instances api")
+    print(env.get_all_instances())
