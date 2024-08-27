@@ -7,6 +7,7 @@ from microservice import Microservice
 from endpoint import Endpoint
 class Application:
     def __init__(self, microservices_config_path: str, calls_config_path: str, ms_name: str):
+        self.ms_id = 1
         self.instances: Dict[str, Microservice] = {}
         self.bandwidth_adj_list = {} # 存储不同instance之间所产生的带宽。
         self.ms_name = ms_name
@@ -37,7 +38,6 @@ class Application:
 
     def _initialize_microservices(self):
         """初始化所有微服务实例及其依赖关系"""
-
         for ms_name, ms_data in self.microservices_config.items():
             num_replicas = random.randint(1, ms_data["replica"])
             for i in range(num_replicas):
@@ -47,6 +47,7 @@ class Application:
                     self.replica_sets[ms_name] = []
                 self.replica_sets[ms_name].append(instance_name)
                 microservice_instance = Microservice(
+                    id=self.ms_id,
                     name=instance_name,
                     original_name=ms_name,
                     cpu_requests=parser.parse_cpu_requests(ms_data["cpu-requests"]),
@@ -54,9 +55,9 @@ class Application:
                     num_replicas=num_replicas,
                     type=ms_data["type"] 
                 )
-
                 self.instances[instance_name]=microservice_instance
                 self.bandwidth_adj_list[microservice_instance.name] = []
+                self.ms_id += 1
         self._process_calls()
 
     def _process_calls(self):

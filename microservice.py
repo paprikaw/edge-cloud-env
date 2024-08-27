@@ -6,8 +6,9 @@ from calls import Call
 
 
 class Microservice:
-    def __init__(self, name, original_name, cpu_requests, memory_requests, num_replicas, type):
+    def __init__(self, name: str, id: int, original_name: str, cpu_requests: float, memory_requests: float, num_replicas: int, type: str):
         self.name = name
+        self.id = id
         self.original_name = original_name
         self.cpu_requests = cpu_requests
         self.memory_requests = memory_requests

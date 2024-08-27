@@ -1,6 +1,7 @@
 class Node:
-    def __init__(self, node_id, node_type, cpu_type, cpu_availability, memory_availability, bandwidth_usage, bandwidth, layer):
+    def __init__(self, node_name, node_id, node_type, cpu_type, cpu_availability, memory_availability, bandwidth_usage, bandwidth, layer):
         self.node_id = node_id
+        self.node_name = node_name
         self.node_type = node_type
         self.cpu_type = cpu_type
         self.cpu_availability = cpu_availability

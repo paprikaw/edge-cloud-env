@@ -9,7 +9,7 @@
     "data-compression-service": {
         "cpu-requests": "1000m",
         "memory-requests": "1G",
-        "replica": 3,
+        "replica": 1,
         "external_services": [ "db-service", "detection-service"],
         "type": "service"
     },
@@ -24,7 +24,7 @@
         "cpu-requests": "1000m",
         "memory-requests": "1G",
         "external_services": {},
-        "replica": 3,
+        "replica": 1,
         "type": "service"
     }
 }

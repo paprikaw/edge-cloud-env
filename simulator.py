@@ -13,6 +13,7 @@ from calls import Call
 
 class MicroserviceSimulator:
     def __init__(self, node_path):
+        self.node_id = 1
         # self.profiling_data = self._load_profiling_data(profiling_path)
         self.nodes: Dict[str, Node] = {}
         self.latency_between_layer: Dict[str, Dict[str, float]] = {}
@@ -34,11 +35,9 @@ class MicroserviceSimulator:
 
     def _init_nodes(self, nodes_config):
         """从配置文件中初始化节点资源"""
-        node_id = 1
         for layer, node_types in nodes_config["cluster_setup"].items():
             for node_type, config in node_types.items():
                 node_count = random.randint(config["count_range"][0], config["count_range"][1])
-
                 for _ in range(node_count):
                     cpu_availability = parser.parse_cpu_requests(random.choice(config["cpu_availability"]))
                     memory_availability = parser.parse_memory(random.choice(config["memory_availability"]))
@@ -46,9 +45,10 @@ class MicroserviceSimulator:
                     bandwidth_usage = parser.parse_percentage(random.choice(config["bandwidth_utilization"])) * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
 
-                    node_name = f"{node_type}_{node_id}"
+                    node_name = f"{node_type}_{self.node_id}"
                     self.nodes[node_name] = Node(
-                        node_id=node_name,
+                        node_id=self.node_id,
+                        node_name=node_name,
                         node_type=node_type,
                         cpu_type=cpu_type,
                         cpu_availability=cpu_availability,
@@ -59,8 +59,7 @@ class MicroserviceSimulator:
                     )
                     self.node_layer_map.setdefault(layer, []).append(node_name)
                     print(f"Initialized node: {node_name} with CPU Type: {cpu_type}, CPU: {cpu_availability}, Memory: {memory_availability}, Bandwidth: {bandwidth}, Bandwidth Usage: {bandwidth_usage}")
-
-                    node_id += 1
+                    self.node_id += 1
 
     def _find_available_nodes(self, ms: Microservice) -> List[str]:
         """查找可用的节点"""
@@ -71,7 +70,6 @@ class MicroserviceSimulator:
     
         # 过滤出可用节点
         available_nodes = [node_id for node_id in nodes if self.nodes[node_id].check_resource(ms.cpu_requests, ms.memory_requests)]
-    
         return available_nodes
 
     def get_node(self, node_id: str)->Node:
@@ -122,7 +120,7 @@ class MicroserviceSimulator:
         assert(ms_app.deployState == "Ongoing")
         return
 
-    def deploy_ms(self, ms_app_name: str, instance_id: str, node_id: str) -> bool:
+    def deploy_ms(self, ms_app_name: str, instance_id: str, node_id: str):
         """将单个微服务部署到集群中"""
         ms_app = self.ms_apps[ms_app_name]
         assert(ms_app.deployState == "Ongoing")
@@ -168,11 +166,10 @@ class MicroserviceSimulator:
         在当前的语境下，只能schedule一个已经部署的微服务
         只能在traffic已经停止的情况下调用
         """
-        ms_app = self.ms_apps[ms_app_id]
-        assert(ms_app.traffic_started == False)
-        assert(ms_app.deployState == "Deployed")
+        env.stop_traffic(ms_name)
         self.undeploy_ms(ms_app_id, instance_id)
         self.deploy_ms(ms_app_id, instance_id, node_id)
+        env.start_traffic(ms_name)
 
     #----- 关于计算latency的逻辑
     def predict_bandwidth(self, ms_app_id: str, instance_id: str) -> int:
@@ -207,7 +204,7 @@ class MicroserviceSimulator:
 
         return self._bandwidth_latency_between_instances(ms_app_id, instance_id1, instance_id2, data_size) + self._latency_between_nodes(instance_1.node_id, instance_2.node_id)
 
-    def get_instance_node(self, ms_app_id: str, instance_id: str) -> Node:
+    def _get_instance_node(self, ms_app_id: str, instance_id: str) -> Node:
         """获取微服务实例所在的节点"""
         node_id = self.ms_apps[ms_app_id].get_instance(instance_id).node_id
         return self.nodes[node_id]
@@ -224,7 +221,7 @@ class MicroserviceSimulator:
             replica_set = ms_app.get_replica_set(call.instance_id)
             avg_execution_latency = 0
             for instance_id in replica_set:
-                cpu_type = self.get_instance_node(ms_app_id, instance_id).cpu_type
+                cpu_type = self._get_instance_node(ms_app_id, instance_id).cpu_type
                 execution_time = call.execution_time.get(cpu_type, 0)
                 if execution_time == 0:
                     assert call.instance_id == "client"
@@ -258,6 +255,22 @@ class MicroserviceSimulator:
             for instance_id2 in replica_set2:
                 total_latency += self.network_latency_between_instances(ms_app_id, instance_id1, instance_id2, data_size)
         return total_latency / (len(replica_set1) * len(replica_set2))
+
+    def get_endpoints(self)->List[str]:
+        """获取所有的endpoints"""
+        endpoints = []
+        for ms_app in self.ms_apps.values():
+            endpoints.extend([name for name in ms_app.endpoints])
+        return endpoints
+
+    def check_node_deployable(self, ms_app_id: str, instance_id: str, node_id: str) -> bool:
+        """Check if a node is deployable"""
+        ms_app = self.ms_apps[ms_app_id]
+        instance = ms_app.get_instance(instance_id)
+        node = self.nodes[node_id]
+        return node.check_resource(instance.cpu_requests, instance.memory_requests)
+    def get_all_instances(self)->List[int]:
+        return [instance.id for instance in self.simulator.ms_apps[self.ms_app_name].instances.values()]
 
 if __name__ == "__main__":
     profiling_path = 'default_profile.json'
@@ -309,9 +322,7 @@ if __name__ == "__main__":
     if target_node_id == -1:
         print(f"No available node to migrate instance {ms_instance_id}")
     else:    
-        env.stop_traffic(ms_name)
         env.migrate_microservices(ms_name, ms_instance_id, target_node_id)
-        env.start_traffic(ms_name)
         print(f"Instance {ms_instance_id} migrated from {cur_node_id} to node {target_node_id}")
 
     for node_id, node in env.nodes.items():
@@ -332,3 +343,6 @@ if __name__ == "__main__":
     endpoint_id = "detection"  # 假设这个 endpoint ID 存在于 calls.json 中
     end_to_end_latency = env.end_to_end_latency(ms_name, endpoint_id)
     print(f"End-to-End Latency for {endpoint_id}: {end_to_end_latency} ms")
+
+    print("\nTest 9: 验证get_endpoint api")
+    print(env.get_endpoints())
