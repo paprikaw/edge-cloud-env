@@ -1,7 +1,8 @@
-from calls import Call
+from call import Call
 import json
 from typing import Dict, List
 import parser
+import logging
 
 class Endpoint:
     def __init__(self, name, config: Dict):
@@ -45,13 +46,13 @@ class Endpoint:
 
     def print_trace(self):
         """递归打印所有的 call_path"""
-        print(f"Endpoint: {self.name}, RPS: {self.rps}")
+        logging.info(f"Endpoint: {self.name}, RPS: {self.rps}")
         self._print_call_trace(self.call_groups, level=0)
 
     def _print_call_trace(self, call: Call, level: int):
         """辅助递归函数，用于打印 Call 对象结构"""
         indent = "  " * level
-        print(f"{indent}Call: {call.instance_id}, Data Size: {call.data_size}MB, Execution Time: {call.execution_time}")
+        logging.info(f"{indent}Call: {call.name}, Data Size: {call.data_size}MB, Execution Time: {call.execution_time}")
 
         for parallel_calls in call.call_groups:
             for next_call in parallel_calls:

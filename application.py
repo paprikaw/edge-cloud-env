@@ -2,15 +2,16 @@ import json
 import random
 import parser
 from typing import Dict, List
-from calls import Call
+from call import Call
 from microservice import Microservice
 from endpoint import Endpoint
+import logging
 class Application:
     def __init__(self, microservices_config_path: str, calls_config_path: str, ms_name: str):
-        self.ms_id = 1
+        self.incre_id = 0
         self.instances: Dict[str, Microservice] = {}
         self.bandwidth_adj_list = {} # 存储不同instance之间所产生的带宽。
-        self.ms_name = ms_name
+        self.name = ms_name
         self.traffic_started = False
         self.replica_sets = {} # key为ms_name，value为instance_name的列表
         self.endpoints: Endpoint = {} # 存储所有的endpoints
@@ -47,7 +48,7 @@ class Application:
                     self.replica_sets[ms_name] = []
                 self.replica_sets[ms_name].append(instance_name)
                 microservice_instance = Microservice(
-                    id=self.ms_id,
+                    id=self.incre_id,
                     name=instance_name,
                     original_name=ms_name,
                     cpu_requests=parser.parse_cpu_requests(ms_data["cpu-requests"]),
@@ -55,20 +56,20 @@ class Application:
                     num_replicas=num_replicas,
                     type=ms_data["type"] 
                 )
-                self.instances[instance_name]=microservice_instance
-                self.bandwidth_adj_list[microservice_instance.name] = []
-                self.ms_id += 1
-        self._process_calls()
+                self.instances[self.incre_id]=microservice_instance
+                self.bandwidth_adj_list[microservice_instance.id] = []
+                self.incre_id += 1
+        self._parse_calls()
 
-    def _process_calls(self):
+    def _parse_calls(self):
         """处理 calls.json 中的调用路径，生成带宽使用情况的邻接列表并构造 Call 结构体"""
         for call_name, call_data in self.calls_config.items():
             rps = call_data["rps"]
             client = call_data["client"]
-            self._dfs_process_seq_call(call_data["call-path"], rps, client)
+            self._dfs_parse_calls(call_data["call-path"], rps, client)
 
-    def _dfs_process_seq_call(self, seq_calls, rps, ms_name):
-        """递归处理调用路径，计算带宽并更新邻接列表，并构造 Call 结构体"""
+    def _dfs_parse_calls(self, seq_calls, rps, ms_name):
+        """递归处理调用路径，计算带宽并更新邻接列表"""
         ms_replica = self._get_replica_count(ms_name)
         for call_group in seq_calls:
             for next_ms_name, call_data in call_group.items():
@@ -82,16 +83,16 @@ class Application:
                         for next_microservice in self.instances.values():
                             if next_microservice.is_instance_of(next_ms_name):
                                 existing_entry = next(
-                                    (entry for entry in self.bandwidth_adj_list[microservice.name] if entry[0] == next_microservice.name),
+                                    (entry for entry in self.bandwidth_adj_list[microservice.id] if entry[0] == next_microservice.id),
                                     None
                                 )
                                 if existing_entry:
                                     existing_entry[1] += bandwidth_per_replica
                                 else:
-                                    self.bandwidth_adj_list[microservice.name].append([next_microservice.name, bandwidth_per_replica])
+                                    self.bandwidth_adj_list[microservice.id].append([next_microservice.id, bandwidth_per_replica])
                 # 递归处理下一层的调用路径
                 if "call-path" in call_data and call_data["call-path"]:
-                    self._dfs_process_seq_call(call_data["call-path"], rps, next_ms_name)
+                    self._dfs_parse_calls(call_data["call-path"], rps, next_ms_name)
 
     def _init_endpoints(self):
         """初始化所有端点"""
@@ -116,15 +117,15 @@ class Application:
         for ms in self.instances.values():
             total_bandwidth = 0
             # print(f"开始计算 {ms.name} 的带宽")
-            for next_service, bandwidth in self.bandwidth_adj_list[ms.name]:
-                next_microservice = self.instances[next_service]
+            for next_service_id, bandwidth in self.bandwidth_adj_list[ms.id]:
+                next_microservice = self.instances[next_service_id]
                 if ms.node_id != next_microservice.node_id:
                     total_bandwidth += bandwidth
-                    old_bandwidth = next_microservice.total_bandwidth
+                    # old_bandwidth = next_microservice.total_bandwidth
                     next_microservice.total_bandwidth += bandwidth
                     # print(f"更新 {next_microservice.name} 从 {old_bandwidth} 到 {next_microservice.total_bandwidth}")
             ms.total_bandwidth += total_bandwidth
-            print(f"最终 {ms.name} 的带宽为: {ms.total_bandwidth}")
+            logging.info(f"最终 {ms.name} 的带宽为: {ms.total_bandwidth}")
 
 
     def _get_replica_count(self, ms_name):
@@ -141,9 +142,9 @@ class Application:
             raise ValueError(f"Microservice {ms_id} not found.")
         return self.bandwidth_adj_list[ms_id]
 
-    def get_replica_set(self, ms_id):
+    def get_replica_set(self, ms_name):
         """返回指定微服务实例的副本集"""
-        return [ms.name for ms in self.instances.values() if ms.original_name == ms_id]
+        return [ms.id for ms in self.instances.values() if ms.original_name == ms_name]
 
     def get_instances(self):
         """返回所有微服务实例的id"""
@@ -161,16 +162,16 @@ class Application:
     def __repr__(self):
         return f"Microservices({len(self.instances)} instances)"
 
-    def schedule_instance_to_node(self, instance_id: str, node_id: str):
+    def schedule_instance_to_node(self, instance_id: str, node_id: int):
         """将微服务实例调度到指定节点"""
         ms = self.get_instance(instance_id)
         if ms.node_id == -1:
             self.deployedInstanceCnt += 1
         ms.node_id = node_id
-        print(f"调度 {ms.name} 到节点 {node_id}")
+        logging.info(f"调度 {ms.name} 到节点 {node_id}")
         self._handle_deploy_state_change()
 
-    def unschedule_instance(self, instance_id: str):
+    def _unschedule_instance(self, instance_id: str):
         """将微服务实例从节点上撤销"""
         ms = self.get_instance(instance_id)
         assert(ms.node_id != -1)
