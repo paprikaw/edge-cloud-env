@@ -10,6 +10,7 @@ class Endpoint:
         self.config = config
         self.call_groups: Call = None
         self.rps = config.get("rps", 0)
+        self.qos = parser.parse_time(config.get("qos", 0))
         self.process_call()
 
     def process_call(self):
@@ -43,7 +44,9 @@ class Endpoint:
                 if "call-path" in call_data and call_data["call-path"]:
                     self._dfs_process_call_path(call_data["call-path"], new_call)
             parent_call.call_groups.append(seq_calls)
-
+    def get_qos(self)->float:
+        return self.qos
+    
     def print_trace(self):
         """递归打印所有的 call_path"""
         logging.info(f"Endpoint: {self.name}, RPS: {self.rps}")

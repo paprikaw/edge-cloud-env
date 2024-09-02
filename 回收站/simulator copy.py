@@ -1,7 +1,7 @@
 import json
 import random
 from scipy.interpolate import interp1d
-from microservice import Application
+from pod import Application
 import parser
 from typing import Dict
 

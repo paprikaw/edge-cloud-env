@@ -3,15 +3,15 @@ import random
 import parser
 from typing import Dict, List
 from call import Call
-from microservice import Microservice
+from pod import Pod
 from endpoint import Endpoint
 import logging
 class Application:
-    def __init__(self, microservices_config_path: str, calls_config_path: str, ms_name: str):
+    def __init__(self, microservices_config_path: str, calls_config_path: str, app_name: str):
         self.incre_id = 0
-        self.instances: Dict[str, Microservice] = {}
+        self.pods: Dict[int, Pod] = {}
         self.bandwidth_adj_list = {} # 存储不同instance之间所产生的带宽。
-        self.name = ms_name
+        self.name = app_name
         self.traffic_started = False
         self.replica_sets = {} # key为ms_name，value为instance_name的列表
         self.endpoints: Endpoint = {} # 存储所有的endpoints
@@ -47,7 +47,7 @@ class Application:
                 if ms_name not in self.replica_sets:
                     self.replica_sets[ms_name] = []
                 self.replica_sets[ms_name].append(instance_name)
-                microservice_instance = Microservice(
+                microservice_instance = Pod(
                     id=self.incre_id,
                     name=instance_name,
                     original_name=ms_name,
@@ -56,7 +56,7 @@ class Application:
                     num_replicas=num_replicas,
                     type=ms_data["type"] 
                 )
-                self.instances[self.incre_id]=microservice_instance
+                self.pods[self.incre_id]=microservice_instance
                 self.bandwidth_adj_list[microservice_instance.id] = []
                 self.incre_id += 1
         self._parse_calls()
@@ -78,9 +78,9 @@ class Application:
                 next_ms_replica = self._get_replica_count(next_ms_name)
                 bandwidth_per_replica = total_bandwidth / next_ms_replica
                 # 更新邻接列表中的带宽信息
-                for microservice in self.instances.values():
+                for microservice in self.pods.values():
                     if microservice.is_instance_of(ms_name):
-                        for next_microservice in self.instances.values():
+                        for next_microservice in self.pods.values():
                             if next_microservice.is_instance_of(next_ms_name):
                                 existing_entry = next(
                                     (entry for entry in self.bandwidth_adj_list[microservice.id] if entry[0] == next_microservice.id),
@@ -108,29 +108,29 @@ class Application:
         """计算每个微服务的总带宽使用量，并考虑是否部署在同一节点上"""
 
         # 微服务带宽的计算是一个idenpotent操作，因此首先将所有微服务的带宽设置为 0
-        for ms in self.instances.values():
+        for ms in self.pods.values():
             ms.total_bandwidth = 0
             if ms.node_id == -1:
                 # 抛出异常，因为微服务没有调度到节点
                 raise ValueError(f"Microservice {ms.name} has not been scheduled to a node.")
 
-        for ms in self.instances.values():
+        for ms in self.pods.values():
             total_bandwidth = 0
             # print(f"开始计算 {ms.name} 的带宽")
             for next_service_id, bandwidth in self.bandwidth_adj_list[ms.id]:
-                next_microservice = self.instances[next_service_id]
+                next_microservice = self.pods[next_service_id]
                 if ms.node_id != next_microservice.node_id:
                     total_bandwidth += bandwidth
                     # old_bandwidth = next_microservice.total_bandwidth
                     next_microservice.total_bandwidth += bandwidth
                     # print(f"更新 {next_microservice.name} 从 {old_bandwidth} 到 {next_microservice.total_bandwidth}")
             ms.total_bandwidth += total_bandwidth
-            logging.info(f"最终 {ms.name} 的带宽为: {ms.total_bandwidth}")
+            logging.debug(f"最终 {ms.name} 的带宽为: {ms.total_bandwidth}")
 
 
     def _get_replica_count(self, ms_name):
         """获取微服务的副本数量"""
-        for microservice in self.instances.values():
+        for microservice in self.pods.values():
             if microservice.original_name == ms_name:
                 return microservice.num_replicas
         return 1
@@ -144,47 +144,53 @@ class Application:
 
     def get_replica_set(self, ms_name):
         """返回指定微服务实例的副本集"""
-        return [ms.id for ms in self.instances.values() if ms.original_name == ms_name]
+        return [ms.id for ms in self.pods.values() if ms.original_name == ms_name]
 
-    def get_instances(self):
+    def get_pods(self)->List[int]:
         """返回所有微服务实例的id"""
-        return [ms for ms in self.instances.keys()] 
+        return [ms for ms in self.pods.keys()] 
 
-    def get_instance(self, instance_id:str):
+    def get_pod(self, pod_id:int)->Pod:
         """返回所有微服务实例的id"""
-        return self.instances[instance_id]
+        return self.pods[pod_id]
+
 
     def get_bandwidth(self, instance_id: int) -> int:
         if self.deployState != "Deployed":
             raise ValueError("微服务尚未部署")
-        return self.get_instance(instance_id).total_bandwidth
+        return self.get_pod(instance_id).total_bandwidth
 
     def __repr__(self):
-        return f"Microservices({len(self.instances)} instances)"
+        return f"Microservices({len(self.pods)} instances)"
 
     def schedule_instance_to_node(self, instance_id: str, node_id: int):
         """将微服务实例调度到指定节点"""
-        ms = self.get_instance(instance_id)
+        ms = self.get_pod(instance_id)
         if ms.node_id == -1:
             self.deployedInstanceCnt += 1
         ms.node_id = node_id
-        logging.info(f"调度 {ms.name} 到节点 {node_id}")
+        logging.debug(f"调度 {ms.name} 到节点 {node_id}")
         self._handle_deploy_state_change()
 
     def _unschedule_instance(self, instance_id: str):
         """将微服务实例从节点上撤销"""
-        ms = self.get_instance(instance_id)
+        ms = self.get_pod(instance_id)
         assert(ms.node_id != -1)
         ms.node_id = -1
         self.deployedInstanceCnt -= 1
         self._handle_deploy_state_change()
 
     def _handle_deploy_state_change(self):
-        if self.deployedInstanceCnt == len(self.instances):
+        if self.deployedInstanceCnt == len(self.pods):
             self.deployState = "Deployed"
         elif self.deployedInstanceCnt > 0:
             self.deployState = "Ongoing"
         else:
             self.deployState = "Undeployed"
-    def get_endpoint(self, endpoint_id: str):
-        return self.endpoints[endpoint_id]
+
+    def get_endpoint(self, endpoint_name: str)->Endpoint:
+        return self.endpoints[endpoint_name]
+    def get_endpoints(self)->List[Endpoint]:
+        return self.endpoints
+    def get_endpoint_qos(self, endpoint_name: str):
+        return self.endpoints[endpoint_name].qos
