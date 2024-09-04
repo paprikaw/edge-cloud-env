@@ -1,17 +1,23 @@
 from stable_baselines3 import PPO
+from sb3_contrib import MaskablePPO
 from stable_baselines3.common.callbacks import BaseCallback
 from env import MicroserviceEnv
 import logging
 import numpy as np
-
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.monitor import Monitor
 logging.basicConfig(level=logging.ERROR)
 # 初始化环境
 env = MicroserviceEnv()
+# env = Monitor(env)
 
 # 创建 DQN 模型
 # model = DQN("MultiInputPolicy", env, verbose=1)
-model = PPO("MultiInputPolicy", env, verbose=1)
-
+# model = PPO("MultiInputPolicy", env, policy_kwargs={"net_arch": [128, 128]}, verbose=1)
+model = MaskablePPO("MultiInputPolicy", env, verbose=1)
+# eval_callback = EvalCallback(env, best_model_save_path='./logs/',
+#                              log_path='./logs/', eval_freq=10000,
+#                              n_eval_episodes=10, deterministic=True, render=False)
 class CustomStopTrainingCallback(BaseCallback):
     def __init__(self, reward_threshold, loss_threshold, len_threshold, verbose=0):
         super(CustomStopTrainingCallback, self).__init__(verbose)
@@ -30,10 +36,14 @@ class CustomStopTrainingCallback(BaseCallback):
             return False  # 返回 False 表示停止训练
 
         return True  # 继续训练
+callback = CustomStopTrainingCallback(reward_threshold=40, loss_threshold=250, len_threshold=3)
         
 # 训练代理
-callback = CustomStopTrainingCallback(reward_threshold=40, loss_threshold=250, len_threshold=3)
-model.learn(total_timesteps=100000, callback=callback)
+try:
+    model.learn(total_timesteps=1000000)
+    # 保存模型
+    model.save("maskppo")
+except KeyboardInterrupt:
+    print("Training interrupted. Saving the model.")
+    model.save("maskppo")
 
-# 保存模型
-model.save("dqn_microservice")

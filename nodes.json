@@ -42,16 +42,23 @@
                     1
                 ],
                 "cpu_availability": [
-                    "8"
+                    "1",
+                    "2",
+                    "4",
+                    "8",
+                    "10"
                 ],
                 "memory_availability": [
-                    "4G"
+                    "1G",
+                    "4G",
+                    "8G",
+                    "10"
                 ],
                 "bandwidth_utilization": [
+                    "0",
                     "0.8",
-                    "1",
                     "0.5",
-                    "0"
+                    "1"
                 ]
             }
         },
@@ -62,9 +69,15 @@
                     1
                 ],
                 "cpu_availability": [
-                    "2"
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5"
                 ],
                 "memory_availability": [
+                    "1G",
+                    "2G",
                     "4G"
                 ],
                 "bandwidth_utilization": [
@@ -80,10 +93,13 @@
                     1
                 ],
                 "cpu_availability": [
-                    "2"
+                    "1",
+                    "2",
+                    "4",
+                    "5"
                 ],
                 "memory_availability": [
-                    "2G"
+                    "4G"
                 ],
                 "bandwidth_utilization": [
                     "0.8",
@@ -103,7 +119,7 @@
                     "16"
                 ],
                 "memory_availability": [
-                    "16G"
+                    "8G"
                 ],
                 "bandwidth_utilization": [
                     "0"

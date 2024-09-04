@@ -22,7 +22,7 @@ class MicroserviceSimulator:
         self.node_config_path = 'nodes.json'
 
         self.node_incre_id = 0 # 节点ID
-        self.nodes: Dict[str, Node] = {} # 存储所有的节点
+        self.nodes: Dict[int, Node] = {} # 存储所有的节点
         self.latency_between_layer: Dict[str, Dict[str, float]] = {} # 存储不同层级之间的延迟
         self.node_layer_map: Dict[str, List[int]] = {} # 存储不同层级的节点
         self.cpu_types: List[str] = ["A", "B", "C", "D"]
@@ -322,14 +322,14 @@ class MicroserviceSimulator:
         ms_info = {}
         for ms_name, app in self.apps.items():
             ms_info[ms_name] = {
-                "instances": {}
+                "pods": {}
             }
-            for instance_id, instance in app.pods.items():
-                ms_info[ms_name]["instances"][instance_id] = {
-                    "node_id": instance.node_id,
-                    "cpu_requests": instance.cpu_requests,
-                    "memory_requests": instance.memory_requests,
-                    "total_bandwidth": instance.total_bandwidth
+            for pod_id, pod in app.pods.items():
+                ms_info[ms_name]["pods"][pod.name] = {
+                    "node_id": pod.node_id,
+                    "cpu_requests": pod.cpu_requests,
+                    "memory_requests": pod.memory_requests,
+                    "total_bandwidth": pod.total_bandwidth
                 }
         with open(filename, 'w') as file:
             json.dump({
