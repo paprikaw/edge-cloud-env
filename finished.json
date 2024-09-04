@@ -3,19 +3,19 @@
         "0": {
             "node_name": "cloudInstance_0",
             "node_type": "cloudInstance",
-            "cpu_availability": 0.0,
-            "memory_availability": 1024.0,
+            "cpu_availability": 1.0,
+            "memory_availability": 2048.0,
             "bandwidth": 62.5,
-            "bandwidth_usage": 80.0,
+            "bandwidth_usage": 60.0,
             "layer": "cloud"
         },
         "1": {
             "node_name": "edgeNode-a_1",
             "node_type": "edgeNode-a",
-            "cpu_availability": 4,
-            "memory_availability": 4096.0,
+            "cpu_availability": 3.0,
+            "memory_availability": 3072.0,
             "bandwidth": 25.0,
-            "bandwidth_usage": 20.0,
+            "bandwidth_usage": 70.0,
             "layer": "edge"
         },
         "2": {
@@ -24,7 +24,7 @@
             "cpu_availability": 0.0,
             "memory_availability": 3072.0,
             "bandwidth": 25.0,
-            "bandwidth_usage": 22.5,
+            "bandwidth_usage": 32.5,
             "layer": "edge"
         },
         "3": {
@@ -47,19 +47,19 @@
                     "total_bandwidth": 20.0
                 },
                 "data-compression-service-instance-1": {
-                    "node_id": 0,
+                    "node_id": 1,
                     "cpu_requests": 1.0,
                     "memory_requests": 1024.0,
-                    "total_bandwidth": 30.0
+                    "total_bandwidth": 50.0
                 },
                 "db-service-instance-1": {
-                    "node_id": 0,
+                    "node_id": 2,
                     "cpu_requests": 1.0,
                     "memory_requests": 1024.0,
-                    "total_bandwidth": 0
+                    "total_bandwidth": 20.0
                 },
                 "detection-service-instance-1": {
-                    "node_id": 2,
+                    "node_id": 0,
                     "cpu_requests": 1.0,
                     "memory_requests": 1024.0,
                     "total_bandwidth": 10.0

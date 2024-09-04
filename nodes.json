@@ -2,7 +2,7 @@
     "node_type": {
         "cloudInstance": {
             "cpu_type": "A",
-            "bandwidth": "500m"
+            "bandwidth": "1000m"
         },
         "edgeNode-a": {
             "cpu_type": "B",
@@ -19,19 +19,19 @@
     },
     "latency": {
         "edge": {
-            "cloud": "200ms",
+            "cloud": "50ms",
             "client": "10ms",
             "edge": "5ms"
         },
         "client": {
-            "cloud": "200ms",
+            "cloud": "50ms",
             "client": "5ms",
             "edge": "10ms"
         },
         "cloud": {
             "cloud": "5ms",
-            "client": "200ms",
-            "edge": "200ms"
+            "client": "50ms",
+            "edge": "50ms"
         }
     },
     "cluster_setup": {
@@ -44,20 +44,19 @@
                 "cpu_availability": [
                     "1",
                     "2",
-                    "4",
-                    "8",
-                    "10"
+                    "3",
+                    "4"
                 ],
                 "memory_availability": [
                     "1G",
-                    "4G",
-                    "8G",
-                    "10"
+                    "2G",
+                    "3G",
+                    "4G"
                 ],
                 "bandwidth_utilization": [
                     "0",
-                    "0.8",
                     "0.5",
+                    "0.8",
                     "1"
                 ]
             }
@@ -72,19 +71,19 @@
                     "1",
                     "2",
                     "3",
-                    "4",
-                    "5"
+                    "4"
                 ],
                 "memory_availability": [
                     "1G",
                     "2G",
+                    "3G",
                     "4G"
                 ],
                 "bandwidth_utilization": [
-                    "0.8",
-                    "1",
+                    "0",
                     "0.5",
-                    "0"
+                    "0.8",
+                    "1"
                 ]
             },
             "edgeNode-b": {
@@ -95,17 +94,20 @@
                 "cpu_availability": [
                     "1",
                     "2",
-                    "4",
-                    "5"
+                    "3",
+                    "4"
                 ],
                 "memory_availability": [
+                    "1G",
+                    "2G",
+                    "3G",
                     "4G"
                 ],
                 "bandwidth_utilization": [
-                    "0.8",
-                    "1",
+                    "0",
                     "0.5",
-                    "0"
+                    "0.8",
+                    "1"
                 ]
             }
         },

@@ -27,7 +27,7 @@
             }
         ],
         "rps": 10,
-        "qos": "200ms"
+        "qos": "180ms"
     },
     "data-persistent": {
         "client": "data-compression-service",
@@ -45,6 +45,6 @@
             }
         ],
         "rps": 10,
-        "qos": "200ms"
+        "qos": "180ms"
     }
 }

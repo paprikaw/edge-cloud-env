@@ -17,7 +17,7 @@ class Node:
         self.cpu_availability -= cpu_requests
         self.memory_availability -= memory_requests
 
-    def release_resource(self, cpu_requests: int, memory_requests: int):
+    def _release_resource(self, cpu_requests: int, memory_requests: int):
         """释放节点上的资源"""
         self.cpu_availability += cpu_requests
         self.memory_availability += memory_requests

@@ -172,11 +172,11 @@ class Application:
         logging.debug(f"调度 {ms.name} 到节点 {node_id}")
         self._handle_deploy_state_change()
 
-    def _unschedule_instance(self, instance_id: str):
+    def _unschedule_pod(self, pod_name: str):
         """将微服务实例从节点上撤销"""
-        ms = self.get_pod(instance_id)
-        assert(ms.node_id != -1)
-        ms.node_id = -1
+        pod = self.get_pod(pod_name)
+        assert(pod.node_id != -1)
+        pod.node_id = -1
         self.deployedInstanceCnt -= 1
         self._handle_deploy_state_change()
 

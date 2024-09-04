@@ -26,7 +26,7 @@ class MicroserviceEnv(gym.Env):
         # 定义最低延迟和最大奖励
         self.lower_latency_reward = 3
         self.final_reward = 64
-        self.episode = 1
+        self.episode = 0
         self.node_reset_episode_interval = 1
         self.episode_steps = 0
         self.max_episode_steps = 10
@@ -49,14 +49,16 @@ class MicroserviceEnv(gym.Env):
             # "Pod_id": spaces.MultiDiscrete([num_ms] * num_ms),  # 对于每个微服务实例，表示其ID
             "Pod_node_id": spaces.MultiDiscrete([num_nodes] * num_ms),  # 对于每个微服务实例，表示其所在的节点ID
             "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_ms,), dtype=np.float32),
-            # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_ms,), dtype=np.float32),
-            # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_ms,), dtype=np.float32)
+            "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_ms,), dtype=np.float32),
+            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_ms,), dtype=np.float32)
         })
         # 定义动作空间
-        self.action_space = spaces.MultiDiscrete([num_nodes, num_ms])
+        # self.action_space = spaces.MultiDiscrete([num_nodes, num_ms])
+        self.action_space = spaces.Discrete(num_nodes * num_ms)
     def reset(self, seed=None, options=None):
         '''重置当前的simulator'''
         self.final_reward = 32
+        self.episode_steps = 0
         # 将node_ids和pod_ids打乱
         # random.shuffle(self.node_ids)
         # random.shuffle(self.pod_ids)
@@ -147,8 +149,15 @@ class MicroserviceEnv(gym.Env):
     #     # 获取新的状态
     #     state = self._get_state() if not done else None
     #     return state, reward, done, False, {}
-    def step(self, action: int):
-        node_id, ms_id = action
+    def get_action(self, action: int)->tuple[int, int]:
+        num_ms = len(self.pod_ids)
+        num_nodes = len(self.node_ids)
+        node_id = action // num_ms
+        ms_id = action % num_ms
+        return int(node_id), int(ms_id)
+    
+    def step(self, action):
+        node_id, ms_id = self.get_action(action)
         cur_node_id = self.app.get_pod(ms_id).get_node_id()
         cur_ms_name = self.app.get_pod(ms_id).get_name()
         logger.info(f"Scheduling {cur_ms_name} (node {cur_node_id} -> node {node_id})")
@@ -157,48 +166,23 @@ class MicroserviceEnv(gym.Env):
         self.episode_steps += 1
         reward = 0
         done = False
-        
+
+        # No node can be selected, episode ends  
         if node_id == 3:
-            if not self.is_training:
-                self.simulator.output_simulator_status_to_file("status.json")
-            # print("no node can be selected")
             done = True
-            self.episode_steps = 0
-            state = self._get_state() if not done else None
-            return state, reward, done, False, {}
-        
-        # node_id = self.node_ids[node_id]
-        # ms_id = self.pod_ids[ms_id]
-        if cur_latency <= qos_threshold:
+        # QoS threshold reached, episode ends
+        elif cur_latency <= qos_threshold:
             logger.info(f"Qos Threshold Reached: {cur_latency}")
-            if not self.is_training:
-                self.simulator.output_simulator_status_to_file("status.json")
             done = True
-            self.episode_steps = 0
-            state = self._get_state() if not done else None
-            return state, reward, done, False, {}
-        # elif self.episode_steps >= self.max_episode_steps:
-        #     reward = -50
-        #     logger.info("Episode steps reached maximum")
-        # if self.app.get_pod(ms_id).get_type() == "client" or self.simulator.get_node(node_id).layer == "client" or not self.simulator.check_node_deployable(self.app_name, ms_id, node_id) or cur_node_id == node_id:
-        if cur_node_id == node_id:
-            reward = -10
-            if not self.is_training:
-                done = True
-            logger.info("Action resulted in a failure: Deploy to the same node")
-            # if self.episode > 1000:
-        #     reward = -5
-        #     done = True
-        #     logger.info("Action resulted in a failure: Client node selected")
+        elif cur_node_id == node_id:
+            reward = -5
+            done = True
+            logger.info("Deploy to the same node, episode ends")
         elif not self.simulator.check_node_deployable(self.app_name, ms_id, node_id):
-            reward = -100
+            reward = -1000
             if not self.is_training:
                 done = True
             logger.info("Action resulted in a failure: Node not deployable")
-        # elif cur_node_id == real_node_id:
-        #     reward = -5
-        #     done = True
-        #     logger.info("Action resulted in no change: Same node selected")
         else:
             before_latency = cur_latency
             self.simulator.migrate_pods(self.app_name, ms_id, node_id)
@@ -208,33 +192,20 @@ class MicroserviceEnv(gym.Env):
             reward = before_latency - cur_latency
             if reward < 0:
                 logger.info("Action resulted in worse latency")
-            # elif cur_latency < self.lowest_latency:
-            #     reward += self.lower_latency_reward
-            #     self.lowest_latency = cur_latency
-            #     self.lower_latency_reward += 3
-            #     logger.info(f"New lowest latency achieved! Reward: {reward}")
-                # print(f"New lowest latency achieved! Latency {self.lowest_latency}")
-                # print(f"New lowest latency achieved! Reward: {reward}")
-            # else:
         
-        if not done and cur_latency <= qos_threshold:
-            logger.info(f"QoS threshold reached, final reward: {self.final_reward}")
-            reward += self.final_reward
-            done = True
-        else: 
-            self.final_reward //= 2
-        
-        reward -= self.episode_steps * 3
         # print("lowest_latency: ", self.lowest_latency)
         # print("reward: ", reward)
         # print(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")
-        if self.episode_steps >= self.max_episode_steps:
+        if self.episode_steps >= self.max_episode_steps or cur_latency <= qos_threshold:
         # if cur_latency <= qos_threshold:
             done = True
 
         if done:
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {cur_latency}")
-            self.episode_steps = 0
+            if not self.is_training:
+                self.simulator.output_simulator_status_to_file("finished.json")
+        else:
+            reward -= 5
         state = self._get_state() if not done else None
         return state, reward, done, False, {}
 
@@ -262,24 +233,34 @@ class MicroserviceEnv(gym.Env):
         mask = []
         for node_id in self.node_ids:
             node = self.simulator.get_node(node_id)
-            if  node.layer == "client":
-                mask.append(False)
-                continue
-            isFound = False
             for pod_id in self.pod_ids:
-                if self.simulator.check_node_deployable(self.app_name, pod_id, node_id):
-                    isFound = True
-                    break
-            if isFound:
-                mask.append(True)
-            else:
-                mask.append(False)
-        for pod_id in self.pod_ids:
-            pod = self.app.get_pod(pod_id)
-            if pod.get_type() == "client": 
-                mask.append(False)
-            else:
-                mask.append(True)
+                pod = self.app.get_pod(pod_id)
+                if pod.get_node_id() == node_id:
+                    mask.append(True)
+                    continue
+                if pod.get_type() == "client" or node.layer == "client" or not self.simulator.check_node_deployable(self.app_name, pod_id, node_id):
+                    mask.append(False)
+                else:
+                    mask.append(True)
+        #     if  node.layer == "client":
+        #         mask.append(False)
+        #         continue
+        #     isFound = False
+        #     for pod_id in self.pod_ids:
+        #         if self.simulator.check_node_deployable(self.app_name, pod_id, node_id):
+        #             isFound = True
+        #             break
+        #     if isFound:
+        #         mask.append(True)
+        #     else:
+        #         mask.append(False)
+        # for pod_id in self.pod_ids:
+        #     pod = self.app.get_pod(pod_id)
+        #     if pod.get_type() == "client": 
+        #         mask.append(False)
+        #     else:
+        #         mask.append(True)
+        # print(mask)
         return mask
     
                 # if pod.get_node_id() == node_id:

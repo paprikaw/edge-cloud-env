@@ -1,4 +1,5 @@
 from stable_baselines3 import PPO
+from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
 from sb3_contrib import MaskablePPO
 from stable_baselines3.common.callbacks import BaseCallback
 from env import MicroserviceEnv
@@ -40,7 +41,7 @@ callback = CustomStopTrainingCallback(reward_threshold=40, loss_threshold=250, l
         
 # 训练代理
 try:
-    model.learn(total_timesteps=1000000)
+    model.learn(total_timesteps=200000)
     # 保存模型
     model.save("maskppo")
 except KeyboardInterrupt:

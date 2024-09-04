@@ -110,7 +110,7 @@ class MicroserviceSimulator:
             if len(nodes) == 0:
                 for ms_id, node_id in commit_log:
                     ms = ms_app.get_pod(ms_id)
-                    self.nodes[node_id].release_resource(ms.cpu_requests, ms.memory_requests)
+                    self.nodes[node_id]._release_resource(ms.cpu_requests, ms.memory_requests)
                 return False
 
             idx = random.randint(0, len(nodes) - 1)
@@ -125,14 +125,14 @@ class MicroserviceSimulator:
         self.start_traffic(ms_app_name)
         return True
 
-    def undeploy_pod(self, ms_app_name: str, pod_id: int):
+    def undeploy_pod(self, app_name: str, pod_id: int):
         """将单个pod从集群中撤销"""
-        assert self.apps[ms_app_name].traffic_started == False
-        ms_app = self.apps[ms_app_name]
-        ms = ms_app.get_pod(pod_id)
-        node = self.nodes[ms.node_id]
-        node.release_resource(ms.cpu_requests, ms.memory_requests)
-        ms_app._unschedule_instance(pod_id)
+        app = self.get_app(app_name)
+        assert app.traffic_started == False
+        pod = app.get_pod(pod_id)
+        node = self.get_node(pod.node_id)
+        app._unschedule_pod(pod_id)
+        node._release_resource(pod.cpu_requests, pod.memory_requests)
         return
 
     def reset_ms(self, ms_app_name: str):
