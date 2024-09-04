@@ -16,10 +16,9 @@ logger = logging.getLogger(__name__)
 
 class MicroserviceSimulator:
     def __init__(self):
-        self.profiling_path = 'default_profile.json'
-        self.microservices_config_path = 'microservices.json'
-        self.calls_config_path = 'call_patterns.json'
-        self.node_config_path = 'nodes.json'
+        self.microservices_config_path = './config/services.json'
+        self.calls_config_path = './config/call_patterns.json'
+        self.node_config_path = './config/nodes.json'
 
         self.node_incre_id = 0 # 节点ID
         self.nodes: Dict[int, Node] = {} # 存储所有的节点
@@ -28,7 +27,6 @@ class MicroserviceSimulator:
         self.cpu_types: List[str] = ["A", "B", "C", "D"]
         self.layers: List[str] = ["cloud", "edge", "client"]
         self._init_nodes(self.node_config_path)  # 初始化节点信息
-        self.available_nodes = self.node_layer_map["cloud"] + self.node_layer_map["edge"] + self.node_layer_map["client"]
 
 
         self.apps: Dict[str, Application] = {} # Dict[app_name, Application]
@@ -76,22 +74,24 @@ class MicroserviceSimulator:
                     self.node_incre_id += 1
         self._init_layer_latency(nodes_config["latency"])
 
-    def _find_available_nodes(self, ms: Pod) -> List[int]:
-        """查找可用的节点"""
-        if ms.type == "service":
+    def _find_available_nodes(self, app_name: str, pod_id: int) -> List[int]:
+        """Find available nodes for a pod"""
+        pod = self.get_app(app_name).get_pod(pod_id)
+        if pod.type == "service":
             nodes = self.node_layer_map["cloud"] + self.node_layer_map["edge"]
         else:
             nodes = self.node_layer_map["client"]
     
-        # 过滤出可用节点
-        available_nodes = [node_id for node_id in nodes if self.nodes[node_id].check_resource(ms.cpu_requests, ms.memory_requests)]
+        available_nodes = [node_id for node_id in nodes if self.get_node(node_id).check_resource(pod.cpu_requests, pod.memory_requests)]
         return available_nodes
 
     def get_node(self, node_id: int)->Node:
         """获取节点"""
         return self.nodes[node_id]
-    def get_schedulable_nodes(self) -> List[int]:
-        return self.available_nodes
+    def get_node_ids(self) -> List[int]:
+        return list(self.nodes.keys())
+    def get_nodes(self) -> List[Node]:
+        return list(self.nodes.values())
 
     def load_app(self, ms_config_path: str, calls_config_path: str, app_name: str):
         """加载微服务应用配置"""
@@ -99,30 +99,35 @@ class MicroserviceSimulator:
             raise Exception(f"Microservice {app_name} already exists")
         self.apps[app_name] = Application(ms_config_path, calls_config_path, app_name)
 
-    def deploy_ms_app(self, ms_app_name: str) -> bool:
-        """将整个微服务部署到集群当中"""
-        ms_app = self.apps[ms_app_name]
-        assert(ms_app.deployState == "Undeployed")
-        commit_log = []
-        for ms in ms_app.pods.values():
-            nodes = self._find_available_nodes(ms)
-
+    def deploy_app(self, app_name: str) -> bool:
+        """Deploy pods of an application to the cluster"""
+        app = self.apps[app_name]
+        assert(app.deployState == "Undeployed")
+         # Using a log to track the deployment
+         # If in between the deployment, we find 
+         # that there are no available nodes, we 
+         # rollback the deployment
+        log = []
+        for pod_id in app.get_pods():
+            nodes = self._find_available_nodes(pod_id)
             if len(nodes) == 0:
-                for ms_id, node_id in commit_log:
-                    ms = ms_app.get_pod(ms_id)
-                    self.nodes[node_id]._release_resource(ms.cpu_requests, ms.memory_requests)
+                # Rollback the deployment if no available nodes
+                for pod_id, node_id in log:
+                    pod = app.get_pod(pod_id)
+                    node = self.get_node(node_id)
+                    node._release_resource(pod.cpu_requests, pod.memory_requests)
                 return False
 
             idx = random.randint(0, len(nodes) - 1)
-            commit_log.append((ms.id, nodes[idx]))
+            log.append((pod.id, nodes[idx]))
             node = self.nodes[nodes[idx]]
-            node.claim_resource(ms.cpu_requests, ms.memory_requests)
+            node.claim_resource(pod.cpu_requests, pod.memory_requests)
+        
+        for pod, node_id in log:
+            app.schedule_instance_to_node(pod, node_id)
 
-        for ms, node_id in commit_log:
-            ms_app.schedule_instance_to_node(ms, node_id)
-
-        assert(ms_app.deployState == "Deployed")
-        self.start_traffic(ms_app_name)
+        assert(app.deployState == "Deployed")
+        self.start_traffic(app_name)
         return True
 
     def undeploy_pod(self, app_name: str, pod_id: int):
@@ -338,11 +343,6 @@ class MicroserviceSimulator:
             }, file)
 
 if __name__ == "__main__":
-    # profiling_path = 'default_profile.json'
-    # microservices_config_path = 'microservices.json'
-    # calls_config_path = 'call_patterns.json'
-    # node_config = 'nodes.json'
-    
     # 创建 MicroserviceEnvironment 实例
     env = MicroserviceSimulator()
     logging.basicConfig(level=logging.INFO)
@@ -359,7 +359,7 @@ if __name__ == "__main__":
 
     # 测试 3: 部署微服务
     logger.info("\nTest 3: 部署微服务")
-    is_deployed = env.deploy_ms_app(ms_name)
+    is_deployed = env.deploy_app(ms_name)
     if is_deployed:
         logger.info(f"Microservice {ms_name} successfully deployed")
     else:
@@ -419,5 +419,5 @@ if __name__ == "__main__":
         logger.info(f"Node ID: {node_id}, CPU: {node.cpu_availability}, Memory: {node.memory_availability}, Bandwidth Usage: {node.bandwidth_usage}")
     instanecs = env.apps[ms_name].get_all_pods()
     ms_id = random.choice(instanecs)  # 选择一个实例
-    for target_node_id in env.get_schedulable_nodes():
+    for target_node_id in env.get_node_ids():
         logger.info(f"Check if instance {ms_id} can be deployed on node {target_node_id}: {env.check_node_deployable(ms_name, ms_id, target_node_id)}")
