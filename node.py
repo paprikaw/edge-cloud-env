@@ -9,7 +9,8 @@ class Node:
         self.bandwidth_usage = bandwidth_usage 
         self.bandwidth = bandwidth
         self.layer  = layer
-
+    def get_id(self):
+        return self.node_id
     def claim_resource(self, cpu_requests: int, memory_requests: int):
         """在节点上申请资源"""
         if not self.check_resource(cpu_requests, memory_requests):

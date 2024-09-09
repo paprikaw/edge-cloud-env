@@ -7,22 +7,21 @@ import logging
 class Endpoint:
     def __init__(self, name, config: Dict):
         self.name = name
-        self.config = config
         self.call_groups: Call = None
         self.rps = config.get("rps", 0)
         self.qos = parser.parse_time(config.get("qos", 0))
-        self.process_call()
+        self.process_call(config)
 
-    def process_call(self):
+    def process_call(self, config):
         """处理调用路径，构建 Call 对象结构"""
-        client = self.config.get("client", "")
+        client = config.get("client", "")
 
         # 初始化根 Call 对象
         root_call = Call(client, is_client=True)
         self.call_groups = root_call
 
         # 递归处理调用路径
-        self._dfs_process_call_path(self.config.get("call-path", []), root_call)
+        self._dfs_process_call_path(config.get("call-path", []), root_call)
 
     def _dfs_process_call_path(self, call_groups: List[Dict], parent_call: Call):
         """递归处理调用路径，构建 Call 对象"""
@@ -55,8 +54,8 @@ class Endpoint:
     def _print_call_trace(self, call: Call, level: int):
         """辅助递归函数，用于打印 Call 对象结构"""
         indent = "  " * level
-        logging.info(f"{indent}Call: {call.name}, Data Size: {call.data_size}MB, Execution Time: {call.execution_time}")
-
+        logging.info(f"{indent}Call: {call.name}, Data Size: {call.data_size}MB")
+        # 找到当前的服务所对应的所有pods，并且打印这些pods的信息
         for parallel_calls in call.call_groups:
             for next_call in parallel_calls:
                 self._print_call_trace(next_call, level + 1)

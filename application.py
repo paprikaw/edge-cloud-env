@@ -6,6 +6,7 @@ from call import Call
 from pod import Pod
 from endpoint import Endpoint
 import logging
+from service import Service
 class Application:
     def __init__(self, microservices_config_path: str, calls_config_path: str, app_name: str):
         self.incre_id = 0
@@ -13,9 +14,9 @@ class Application:
         self.bandwidth_adj_list = {} # 存储不同instance之间所产生的带宽。
         self.name = app_name
         self.traffic_started = False
-        self.replica_sets = {} # key为ms_name，value为instance_name的列表
+        # self.replica_sets = {} # key为ms_name，value为instance_name的列表
         self.endpoints: Endpoint = {} # 存储所有的endpoints
-
+        self.services: Dict[str, Service] = {} # 存储所有的服务
         # ms app有三种状态:
         # Undeployed: 所有ms都没有被部署
         # Ongoing: 部分ms被部署
@@ -28,7 +29,7 @@ class Application:
         self.calls_config = self._load_json(calls_config_path)
 
         # 初始化microserivces和endpoints
-        self._initialize_microservices()
+        self._initialize_pods()
         self._init_endpoints()
 
 
@@ -36,29 +37,30 @@ class Application:
         """从文件加载 JSON 配置"""
         with open(path, 'r') as json_file:
             return json.load(json_file)
-
-    def _initialize_microservices(self):
+        
+    def _initialize_pods(self):
         """初始化所有微服务实例及其依赖关系"""
-        for ms_name, ms_data in self.microservices_config.items():
-            num_replicas = random.randint(1, ms_data["replica"])
+        for service_name, service_meta_data in self.microservices_config.items():
+            max_replicas = service_meta_data["max-replica"]
+            num_replicas = random.randint(1, max_replicas)
+            new_service = Service(service_name, max_replicas, num_replicas)
             for i in range(num_replicas):
-                instance_name = f"{ms_name}-instance-{i+1}"
+                pod_name = f"{service_name}-{i+1}"
                 # 将副本集存储在key为ms_name所对应的列表当中，需要handle没有初始化的情况
-                if ms_name not in self.replica_sets:
-                    self.replica_sets[ms_name] = []
-                self.replica_sets[ms_name].append(instance_name)
-                microservice_instance = Pod(
+                pod = Pod(
                     id=self.incre_id,
-                    name=instance_name,
-                    original_name=ms_name,
-                    cpu_requests=parser.parse_cpu_requests(ms_data["cpu-requests"]),
-                    memory_requests=parser.parse_memory(ms_data["memory-requests"]),
+                    name=pod_name,
+                    service_name=service_name,
+                    cpu_requests=parser.parse_cpu_requests(service_meta_data["cpu-requests"]),
+                    memory_requests=parser.parse_memory(service_meta_data["memory-requests"]),
                     num_replicas=num_replicas,
-                    type=ms_data["type"] 
+                    type=service_meta_data["type"]
                 )
-                self.pods[self.incre_id]=microservice_instance
-                self.bandwidth_adj_list[microservice_instance.id] = []
+                self.pods[self.incre_id]=pod
+                self.bandwidth_adj_list[pod.id] = []
+                new_service.add_pod(pod.id)
                 self.incre_id += 1
+            self.services[service_name] = new_service
         self._parse_calls()
 
     def _parse_calls(self):
@@ -68,20 +70,20 @@ class Application:
             client = call_data["client"]
             self._dfs_parse_calls(call_data["call-path"], rps, client)
 
-    def _dfs_parse_calls(self, seq_calls, rps, ms_name):
+    def _dfs_parse_calls(self, seq_calls, rps, pod_id):
         """递归处理调用路径，计算带宽并更新邻接列表"""
-        ms_replica = self._get_replica_count(ms_name)
+        ms_replica = self._get_replica_count(pod_id)
         for call_group in seq_calls:
-            for next_ms_name, call_data in call_group.items():
+            for nxt_svc_name, call_data in call_group.items():
                 data_size = parser.parse_datasize(call_data.get("data-size", "0M"))
                 total_bandwidth = (rps * data_size) / ms_replica
-                next_ms_replica = self._get_replica_count(next_ms_name)
-                bandwidth_per_replica = total_bandwidth / next_ms_replica
+                nxt_svc_replica_cnt = self._get_replica_count(nxt_svc_name)
+                bandwidth_per_replica = total_bandwidth / nxt_svc_replica_cnt
                 # 更新邻接列表中的带宽信息
                 for microservice in self.pods.values():
-                    if microservice.is_instance_of(ms_name):
+                    if microservice.is_instance_of(pod_id):
                         for next_microservice in self.pods.values():
-                            if next_microservice.is_instance_of(next_ms_name):
+                            if next_microservice.is_instance_of(nxt_svc_name):
                                 existing_entry = next(
                                     (entry for entry in self.bandwidth_adj_list[microservice.id] if entry[0] == next_microservice.id),
                                     None
@@ -92,7 +94,7 @@ class Application:
                                     self.bandwidth_adj_list[microservice.id].append([next_microservice.id, bandwidth_per_replica])
                 # 递归处理下一层的调用路径
                 if "call-path" in call_data and call_data["call-path"]:
-                    self._dfs_parse_calls(call_data["call-path"], rps, next_ms_name)
+                    self._dfs_parse_calls(call_data["call-path"], rps, nxt_svc_name)
 
     def _init_endpoints(self):
         """初始化所有端点"""
@@ -101,8 +103,17 @@ class Application:
 
     def print_trace(self):
         """打印所有端点的调用路径"""
-        for endpoint in self.endpoints.values():
-            endpoint.print_trace()
+        pass
+        # for endpoint in self.endpoints.values():
+            
+    # def _print_call_trace(self, call: Call, level: int):
+    #    """辅助递归函数，用于打印 Call 对象结构"""
+    #    indent = "  " * level
+    #    logging.info(f"{indent}Call: {call.name}, Data Size: {call.data_size}MB")
+    #    # 找到当前的服务所对应的所有pods，并且打印这些pods的信息
+    #    for parallel_calls in call.call_groups:
+    #        for next_call in parallel_calls:
+    #            self._print_call_trace(next_call, level + 1)
 
     def calculate_microservice_bandwidth(self):
         """计算每个微服务的总带宽使用量，并考虑是否部署在同一节点上"""
@@ -128,12 +139,9 @@ class Application:
             logging.debug(f"最终 {ms.name} 的带宽为: {ms.total_bandwidth}")
 
 
-    def _get_replica_count(self, ms_name):
+    def _get_replica_count(self, svc_name):
         """获取微服务的副本数量"""
-        for microservice in self.pods.values():
-            if microservice.original_name == ms_name:
-                return microservice.num_replicas
-        return 1
+        return self.services[svc_name].sched_replica_cnt
 
 
     def get_next(self, ms_id):
@@ -142,9 +150,9 @@ class Application:
             raise ValueError(f"Microservice {ms_id} not found.")
         return self.bandwidth_adj_list[ms_id]
 
-    def get_replica_set(self, ms_name):
+    def get_replica_set(self, service_name):
         """返回指定微服务实例的副本集"""
-        return [ms.id for ms in self.pods.values() if ms.original_name == ms_name]
+        return [pod_id for pod_id in self.services[service_name].get_pods()]
 
     def get_pods(self)->List[int]:
         """返回所有微服务实例的id"""
@@ -163,13 +171,13 @@ class Application:
     def __repr__(self):
         return f"Microservices({len(self.pods)} instances)"
 
-    def schedule_instance_to_node(self, instance_id: str, node_id: int):
+    def schedule_pod_to_node(self, pod_id: str, node_id: int):
         """将微服务实例调度到指定节点"""
-        ms = self.get_pod(instance_id)
-        if ms.node_id == -1:
+        pod = self.get_pod(pod_id)
+        if pod.node_id == -1:
             self.deployedInstanceCnt += 1
-        ms.node_id = node_id
-        logging.debug(f"调度 {ms.name} 到节点 {node_id}")
+        pod.node_id = node_id
+        logging.debug(f"调度 {pod.name} 到节点 {node_id}")
         self._handle_deploy_state_change()
 
     def _unschedule_pod(self, pod_name: str):

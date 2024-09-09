@@ -109,7 +109,8 @@ class MicroserviceSimulator:
          # rollback the deployment
         log = []
         for pod_id in app.get_pods():
-            nodes = self._find_available_nodes(pod_id)
+            nodes = self._find_available_nodes(app_name, pod_id)
+            pod = app.get_pod(pod_id)
             if len(nodes) == 0:
                 # Rollback the deployment if no available nodes
                 for pod_id, node_id in log:
@@ -119,13 +120,13 @@ class MicroserviceSimulator:
                 return False
 
             idx = random.randint(0, len(nodes) - 1)
-            log.append((pod.id, nodes[idx]))
+            log.append((pod_id, nodes[idx]))
             node = self.nodes[nodes[idx]]
             node.claim_resource(pod.cpu_requests, pod.memory_requests)
         
-        for pod, node_id in log:
-            app.schedule_instance_to_node(pod, node_id)
-
+        for pod_id, node_id in log:
+            app.schedule_pod_to_node(pod_id, node_id)
+        
         assert(app.deployState == "Deployed")
         self.start_traffic(app_name)
         return True
@@ -159,7 +160,7 @@ class MicroserviceSimulator:
         if not node.check_resource(ms.cpu_requests, ms.memory_requests):
             raise Exception(f"Insufficient resources on node {node_id}")
 
-        ms_app.schedule_instance_to_node(pod_id, node_id)
+        ms_app.schedule_pod_to_node(pod_id, node_id)
         assert(ms.node_id != -1)
 
         node.claim_resource(ms.cpu_requests, ms.memory_requests)
@@ -241,16 +242,16 @@ class MicroserviceSimulator:
     def end_to_end_latency(self, ms_app_id: str, endpoint_id: str) -> float:
         """Calculate end-to-end latency of an endpoint"""
         endpoint = self.apps[ms_app_id].get_endpoint(endpoint_id)
-        ms_app = self.apps[ms_app_id]
+        app = self.apps[ms_app_id]
         def _calculate_call_latency(call: Call) -> float:
             """Helper function to recursively calculate latency for each call"""
             # 获取当前 Call 的执行时间            execution_time = call.execution_time.get(cpu_type, 0)
 
             # 计算当前call的平均执行时间
-            replica_set = ms_app.get_replica_set(call.name)
+            replica_set = app.get_replica_set(call.name)
             avg_execution_latency = 0
-            for instance_id in replica_set:
-                cpu_type = self._get_instance_node(ms_app_id, instance_id).cpu_type
+            for pod_id in replica_set:
+                cpu_type = self._get_instance_node(ms_app_id, pod_id).cpu_type
                 execution_time = call.execution_time.get(cpu_type, 0)
                 if execution_time == 0:
                     assert call.is_client == True 
@@ -275,10 +276,10 @@ class MicroserviceSimulator:
         total_latency = _calculate_call_latency(endpoint.call_groups)
         return total_latency
 
-    def _network_latency_between_replica_set(self, data_size: int, ms_app_id: str, id1: str, id2: str)-> int:
+    def _network_latency_between_replica_set(self, data_size: int, ms_app_id: str, service_a_name: str, service_b_name: str)-> int:
         """计算两个replica set之间的延迟"""
-        replica_set1 = self.apps[ms_app_id].get_replica_set(id1)
-        replica_set2 = self.apps[ms_app_id].get_replica_set(id2)
+        replica_set1 = self.apps[ms_app_id].get_replica_set(service_a_name)
+        replica_set2 = self.apps[ms_app_id].get_replica_set(service_b_name)
         total_latency = 0
         for instance_id1 in replica_set1:
             for instance_id2 in replica_set2:
@@ -290,10 +291,10 @@ class MicroserviceSimulator:
         return self.apps[app_name]
     
     
-    def check_node_deployable(self, ms_app_id: str, instance_id: str, node_id: str) -> bool:
+    def check_node_deployable(self, ms_app_id: str, pod_id: int, node_id: int) -> bool:
         """Check if a node is deployable"""
         ms_app = self.apps[ms_app_id]
-        instance = ms_app.get_pod(instance_id)
+        instance = ms_app.get_pod(pod_id)
         node = self.nodes[node_id]
         return node.check_resource(instance.cpu_requests, instance.memory_requests)
 

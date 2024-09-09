@@ -1,10 +1,12 @@
 from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
 from sb3_contrib import MaskablePPO
+from stable_baselines3.common.monitor import Monitor
 from env import MicroserviceEnv
 import logging
 logging.basicConfig(level=logging.ERROR)
 
-env = MicroserviceEnv()
+env = MicroserviceEnv(num_nodes=4, num_pods=8)
+env = Monitor(env)
 eval_callback = MaskableEvalCallback(
     env,                       
     best_model_save_path='./models/',

@@ -1,0 +1,82 @@
+{
+    "nodes": {
+        "0": {
+            "node_name": "cloudInstance_0",
+            "node_type": "cloudInstance",
+            "cpu_availability": 1.0,
+            "memory_availability": 1024.0,
+            "bandwidth": 125.0,
+            "bandwidth_usage": 134.9999999999999,
+            "layer": "cloud"
+        },
+        "1": {
+            "node_name": "edgeNode-a_1",
+            "node_type": "edgeNode-a",
+            "cpu_availability": 1.0,
+            "memory_availability": 2048.0,
+            "bandwidth": 25.0,
+            "bandwidth_usage": 23.333333333333336,
+            "layer": "edge"
+        },
+        "2": {
+            "node_name": "edgeNode-b_2",
+            "node_type": "edgeNode-b",
+            "cpu_availability": 2.0,
+            "memory_availability": 1024.0,
+            "bandwidth": 25.0,
+            "bandwidth_usage": 53.33333333333333,
+            "layer": "edge"
+        },
+        "3": {
+            "node_name": "client_3",
+            "node_type": "client",
+            "cpu_availability": 15.0,
+            "memory_availability": 7168.0,
+            "bandwidth": 25.0,
+            "bandwidth_usage": 20.0,
+            "layer": "client"
+        }
+    },
+    "microservices": {
+        "iot-ms-app": {
+            "pods": {
+                "client-1": {
+                    "node_id": 3,
+                    "cpu_requests": 1.0,
+                    "memory_requests": 1024.0,
+                    "total_bandwidth": 20.0
+                },
+                "data-compression-service-1": {
+                    "node_id": 1,
+                    "cpu_requests": 1.0,
+                    "memory_requests": 1024.0,
+                    "total_bandwidth": 10.0
+                },
+                "data-compression-service-2": {
+                    "node_id": 2,
+                    "cpu_requests": 1.0,
+                    "memory_requests": 1024.0,
+                    "total_bandwidth": 16.666666666666668
+                },
+                "data-compression-service-3": {
+                    "node_id": 2,
+                    "cpu_requests": 1.0,
+                    "memory_requests": 1024.0,
+                    "total_bandwidth": 16.666666666666668
+                },
+                "db-service-1": {
+                    "node_id": 1,
+                    "cpu_requests": 1.0,
+                    "memory_requests": 1024.0,
+                    "total_bandwidth": 13.333333333333334
+                },
+                "detection-service-1": {
+                    "node_id": 0,
+                    "cpu_requests": 1.0,
+                    "memory_requests": 1024.0,
+                    "total_bandwidth": 10.0
+                }
+            }
+        }
+    }
+}
