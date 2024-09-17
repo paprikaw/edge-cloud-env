@@ -40,7 +40,9 @@ class Application:
         
     def _initialize_pods(self):
         """初始化所有微服务实例及其依赖关系"""
+        service_order_list = []
         for service_name, service_meta_data in self.microservices_config.items():
+            service_order_list.append(service_name)
             max_replicas = service_meta_data["max-replica"]
             num_replicas = random.randint(1, max_replicas)
             new_service = Service(service_name, max_replicas, num_replicas)
@@ -62,6 +64,9 @@ class Application:
                 self.incre_id += 1
             self.services[service_name] = new_service
         self._parse_calls()
+        # 将service_order_list输出为JSON文件
+        with open('service_order.json', 'w', encoding='utf-8') as f:
+            json.dump(service_order_list, f, ensure_ascii=False, indent=4)
 
     def _parse_calls(self):
         """处理 calls.json 中的调用路径，生成带宽使用情况的邻接列表并构造 Call 结构体"""

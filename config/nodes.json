@@ -1,32 +1,36 @@
 {
     "node_type": {
-        "cloudInstance": {
-            "cpu_type": "A",
-            "bandwidth": "1000m"
+        "tb-cloud-vm1": {
+            "cpu_type": 0,
+            "bandwidth": "500m"
         },
-        "edgeNode-a": {
-            "cpu_type": "B",
+        "tb-edge-vm1": {
+            "cpu_type": 2,
             "bandwidth": "200m"
         },
-        "edgeNode-b": {
-            "cpu_type": "C",
+        "tb-edge-vm2": {
+            "cpu_type": 2,
             "bandwidth": "200m"
         },
-        "client": {
-            "cpu_type": "D",
+        "tb-edge-vm3": {
+            "cpu_type": 1,
+            "bandwidth": "200m"
+        },
+        "tb-client-vm1": {
+            "cpu_type": 1,
             "bandwidth": "200m"
         }
     },
     "latency": {
         "edge": {
             "cloud": "50ms",
-            "client": "10ms",
+            "client": "5ms",
             "edge": "5ms"
         },
         "client": {
             "cloud": "50ms",
             "client": "5ms",
-            "edge": "10ms"
+            "edge": "5ms"
         },
         "cloud": {
             "cloud": "5ms",
@@ -36,22 +40,26 @@
     },
     "cluster_setup": {
         "cloud": {
-            "cloudInstance": {
+            "tb-cloud-vm1": {
                 "count_range": [
                     1,
                     1
                 ],
                 "cpu_availability": [
+                    "0",
                     "1",
                     "2",
                     "3",
                     "4"
                 ],
                 "memory_availability": [
+                    "0",
+                    "500m",
                     "1G",
                     "2G",
                     "3G",
-                    "4G"
+                    "4G",
+                    "8G"
                 ],
                 "bandwidth_utilization": [
                     "0",
@@ -62,18 +70,20 @@
             }
         },
         "edge": {
-            "edgeNode-a": {
+            "tb-edge-vm2": {
                 "count_range": [
                     1,
                     1
                 ],
                 "cpu_availability": [
-                    "1",
-                    "2",
-                    "3",
-                    "4"
+                    "0",
+                    "400m",
+                    "600m",
+                    "800m",
+                    "1000m"
                 ],
                 "memory_availability": [
+                    "0",
                     "1G",
                     "2G",
                     "3G",
@@ -86,18 +96,48 @@
                     "1"
                 ]
             },
-            "edgeNode-b": {
+            "tb-edge-vm1": {
                 "count_range": [
                     1,
                     1
                 ],
                 "cpu_availability": [
+                    "0",
+                    "500m",
                     "1",
                     "2",
                     "3",
                     "4"
                 ],
                 "memory_availability": [
+                    "0",
+                    "1G",
+                    "2G",
+                    "3G",
+                    "4G"
+                ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0.5",
+                    "0.8",
+                    "1"
+                ]
+            },
+            "tb-edge-vm3": {
+                "count_range": [
+                    1,
+                    1
+                ],
+                "cpu_availability": [
+                    "0",
+                    "500m",
+                    "1",
+                    "2",
+                    "3",
+                    "4"
+                ],
+                "memory_availability": [
+                    "0",
                     "1G",
                     "2G",
                     "3G",
@@ -112,16 +152,16 @@
             }
         },
         "client": {
-            "client": {
+            "tb-client-vm1": {
                 "count_range": [
                     1,
                     1
                 ],
                 "cpu_availability": [
-                    "16"
+                    "1"
                 ],
                 "memory_availability": [
-                    "8G"
+                    "4G"
                 ],
                 "bandwidth_utilization": [
                     "0"

@@ -1,1 +1,3 @@
 *.zip
+logs/**
+__pycache__/**

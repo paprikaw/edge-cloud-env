@@ -3,21 +3,21 @@
         "client": "client",
         "call-path": [
             {
-                "data-compression-service": {
+                "data-compression": {
                     "data-size": "2M",
                     "execution-time": {
-                        "A": "20ms",
-                        "B": "40ms",
-                        "C": "50ms"
+                        "0": "20ms",
+                        "1": "40ms",
+                        "2": "50ms"
                     },
                     "call-path": [
                         {
-                            "detection-service": {
+                            "machine-learning": {
                                 "data-size": "1M",
                                 "execution-time": {
-                                    "A": "200ms",
-                                    "B": "300ms",
-                                    "C": "400ms"
+                                    "0": "200ms",
+                                    "1": "300ms",
+                                    "2": "400ms"
                                 },
                                 "call-path": []
                             }
@@ -27,24 +27,24 @@
             }
         ],
         "rps": 10,
-        "qos": "150ms"
+        "qos": "180ms"
     },
     "data-persistent": {
-        "client": "data-compression-service",
+        "client": "data-compression",
         "call-path": [
             {
-                "db-service": {
+                "db": {
                     "data-size": "2M",
                     "execution-time": {
-                        "A": "10ms",
-                        "B": "15ms",
-                        "C": "20ms"
+                        "0": "10ms",
+                        "1": "15ms",
+                        "2": "20ms"
                     },
                     "call-path": []
                 }
             }
         ],
         "rps": 10,
-        "qos": "150ms"
+        "qos": "180ms"
     }
 }

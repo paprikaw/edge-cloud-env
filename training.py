@@ -5,11 +5,11 @@ from env import MicroserviceEnv
 import logging
 logging.basicConfig(level=logging.ERROR)
 
-env = MicroserviceEnv(num_nodes=4, num_pods=8)
+env = MicroserviceEnv(num_nodes=5, num_pods=8)
 env = Monitor(env)
 eval_callback = MaskableEvalCallback(
     env,                       
-    best_model_save_path='./models/',
+    best_model_save_path='./models/v1',
     log_path='./logs/results/',       
     eval_freq=10000,                  
     deterministic=True,               
@@ -21,7 +21,7 @@ model = MaskablePPO("MultiInputPolicy", env, verbose=1)
 try:
     model.learn(total_timesteps=200000,callback=eval_callback)
     # 保存模型
-    model.save("maskppo")
+    model.save("./models/v1/maskppo")
 except KeyboardInterrupt:
     print("Training interrupted. Saving the model.")
-    model.save("maskppo")
+    model.save("./models/v1/maskppo")

@@ -1,31 +1,31 @@
 {
     "client": {
-        "cpu-requests": "1000m",
+        "cpu-requests": "500m",
         "memory-requests": "1G",
         "max-replica": 1,
         "external_services": [
-            "data-compression-service"
+            "data-compression"
         ],
         "type": "client"
     },
-    "data-compression-service": {
+    "data-compression": {
         "cpu-requests": "1000m",
         "memory-requests": "1G",
         "max-replica": 3,
         "external_services": [
-            "db-service",
-            "detection-service"
+            "db",
+            "detection"
         ],
         "type": "service"
     },
-    "db-service": {
-        "cpu-requests": "1000m",
+    "db": {
+        "cpu-requests": "500m",
         "memory-requests": "1G",
         "external_services": {},
         "max-replica": 1,
         "type": "service"
     },
-    "detection-service": {
+    "machine-learning": {
         "cpu-requests": "1000m",
         "memory-requests": "1G",
         "external_services": {},

@@ -1,9 +1,9 @@
 def parse_memory(data_size: str)->int:
-    """将数据大小转换为以 MB 为单位"""
+    """将数据大小转换为以 GB 为单位"""
     if data_size.endswith("M"):
-        return float(data_size[:-1])
+        return float(data_size[:-1]) / 1024
     if data_size.endswith("G"):
-        return float(data_size[:-1]) * 1024
+        return float(data_size[:-1]) 
     return 0  # 默认情况为 0M
 
 def parse_datasize(data_size: str)->int:

@@ -46,6 +46,7 @@ class MicroserviceSimulator:
 
     def _init_nodes(self, node_config_path):
         """从配置文件中初始化节点资源"""
+        node_list = []
         nodes_config = self._load_profiling_data(node_config_path) # 加载节点配置
         for layer, node_types in nodes_config["cluster_setup"].items():
             for node_type, config in node_types.items():
@@ -69,9 +70,13 @@ class MicroserviceSimulator:
                         bandwidth=bandwidth,
                         layer=layer
                     )
+                    node_list.append(node_type)
                     self.node_layer_map.setdefault(layer, []).append(node_id)
                     logger.debug(f"Initialized node: {node_name} with CPU Type: {cpu_type}, CPU: {cpu_availability}, Memory: {memory_availability}, Bandwidth: {bandwidth}, Bandwidth Usage: {bandwidth_usage}")
                     self.node_incre_id += 1
+        # 将node_name列表输出为JSON文件
+        with open('node_name_order.json', 'w', encoding='utf-8') as f:
+            json.dump(node_list, f, ensure_ascii=False, indent=4)
         self._init_layer_latency(nodes_config["latency"])
 
     def _find_available_nodes(self, app_name: str, pod_id: int) -> List[int]:
@@ -234,9 +239,9 @@ class MicroserviceSimulator:
 
         return self._bandwidth_latency_between_instances(ms_app_id, instance_id1, instance_id2, data_size) + self._latency_between_nodes(instance_1.node_id, instance_2.node_id)
 
-    def _get_instance_node(self, ms_app_id: str, instance_id: int) -> Node:
+    def _get_pod_node(self, ms_app_id: str, pod_id: int) -> Node:
         """获取微服务实例所在的节点"""
-        node_id = self.apps[ms_app_id].get_pod(instance_id).node_id
+        node_id = self.apps[ms_app_id].get_pod(pod_id).node_id
         return self.nodes[node_id]
 
     def end_to_end_latency(self, ms_app_id: str, endpoint_id: str) -> float:
@@ -251,8 +256,8 @@ class MicroserviceSimulator:
             replica_set = app.get_replica_set(call.name)
             avg_execution_latency = 0
             for pod_id in replica_set:
-                cpu_type = self._get_instance_node(ms_app_id, pod_id).cpu_type
-                execution_time = call.execution_time.get(cpu_type, 0)
+                cpu_type = self._get_pod_node(ms_app_id, pod_id).cpu_type
+                execution_time = call.execution_time.get(str(cpu_type), 0)
                 if execution_time == 0:
                     assert call.is_client == True 
                 avg_execution_latency += execution_time 
