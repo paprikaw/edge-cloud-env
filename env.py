@@ -39,7 +39,6 @@ class MicroserviceEnv(gym.Env):
         self.pods: List[Pod] = []
         self.isMask = isMask
         self.action_space = spaces.Discrete(num_nodes * num_pods+1)
-        self.stopped_action = num_nodes * num_pods
         self.all_masked = False
         self.observation_space = spaces.Dict({
             "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),
@@ -101,6 +100,7 @@ class MicroserviceEnv(gym.Env):
                 self.pods.append(pod)
             for _ in range(service.sched_replica_cnt, service.max_replica_cnt):
                 self.pods.append(Pod("dummy", -1, "dummy", 0, 0, 0, "dummy","dummy", 0, False))
+
         pod_layer_map = {
             "cloud": 0,
             "edge": 1,
@@ -162,14 +162,6 @@ class MicroserviceEnv(gym.Env):
     
     def step(self, action):
         self.step_cnt += 1
-        if action == self.stopped_action:
-            if self.step_cnt < self.invalid_training_step:
-                return self._get_state(), -2, False, False, {}
-            logger.info("Stop action selected")
-            logger.info(f"Episode steps: {self.episode_steps}, Final latency: {self.latency_func()}")
-            if not self.is_training:
-                self.simulator.output_simulator_status_to_file("./logs/test_end.json")
-            return None, -2, True, False, {}
         node, pod = self.get_action(action)
         node_id = node.get_id()
         pod_id = pod.get_id()
@@ -189,8 +181,8 @@ class MicroserviceEnv(gym.Env):
         elif cur_latency <= qos_threshold:
             logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
             done = True
-        elif not self.isMask and not self.check_valid_action(pod, node):
-            reward = -10
+        elif not self.check_valid_action(pod, node):
+            reward = -20
             done = True
             logger.info("Action resulted in a failure: Node not deployable")
         else:
@@ -270,33 +262,6 @@ class MicroserviceEnv(gym.Env):
             not self.simulator.check_node_deployable(self.app_name, pod.id, node.node_id):
             return False
         return True
-
-    def action_masks(self)->List[bool]:
-        """
-        Returns an action mask to filter out invalid actions.
-        The mask is a boolean array where True indicates a valid action.
-        """
-        mask = []
-        # false_mask_cnt = 0
-        for node in self.nodes:
-            # node = self.simulator.get_node(node_id)
-            for pod in self.pods:
-                # if pod.get_node_id() == node.get_id():
-                #     mask.append(True)
-                #     false_mask_cnt += 1
-                if self.check_valid_action(pod, node):
-                    mask.append(True)
-                else:
-                    mask.append(False)
-                logger.debug(f"Node {node.get_id()} Pod {pod.get_name()} Mask: {mask[-1]}\n")
-        # if false_mask_cnt == len(mask):
-        #     self.all_masked = True
-        # else:
-        #     self.all_masked = False
-        
-        mask.append(True) # Stop action is always valid
-
-        return mask
 
     def _init_simulator(self, simulator: MicroserviceSimulator, ms_name: str) -> bool:
         logger.debug("\n部署微服务")

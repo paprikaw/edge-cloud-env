@@ -3,7 +3,7 @@ from sb3_contrib import MaskablePPO
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
-from env import MicroserviceEnv
+from maskenv import MicroserviceEnv
 import logging
 logging.basicConfig(level=logging.ERROR)
 version = "v9-no-mask"

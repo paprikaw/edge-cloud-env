@@ -16,7 +16,7 @@ class MicroserviceMaskEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_training=True, isMask=True, num_nodes=0, num_pods=0):
+    def __init__(self, is_training=True, num_nodes=0, num_pods=0):
         super(MicroserviceMaskEnv, self).__init__()
         
         self.current_ms = None  # 当前待调度的微服务实例
@@ -35,7 +35,6 @@ class MicroserviceMaskEnv(gym.Env):
         self.num_pods = num_pods
         self.nodes: List[Node] = []
         self.pods: List[Pod] = []
-        self.isMask = isMask
         self.action_space = spaces.Discrete(num_nodes * num_pods+1)
         self.stopped_action = num_nodes * num_pods
         self.all_masked = False
@@ -162,12 +161,9 @@ class MicroserviceMaskEnv(gym.Env):
         self.episode_steps += 1
         reward = 0
         done = False
-        # No node can be selected 
-        if self.all_masked:
-            assert(False)
-            done = True
-        # QoS threshold reached, episode ends
-        elif cur_latency <= qos_threshold:
+
+        if cur_latency <= qos_threshold:
+            assert(False) 
             logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
             done = True
         elif not self.check_valid_action(pod, node):
