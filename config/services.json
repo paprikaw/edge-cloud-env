@@ -1,34 +1,45 @@
 {
     "client": {
-        "cpu-requests": "500m",
-        "memory-requests": "1G",
+        "cpu-requests": "700m",
+        "memory-requests": "700M",
         "max-replica": 1,
         "external_services": [
             "data-compression"
         ],
-        "type": "client"
+        "type": "service",
+        "layer": "client"
     },
-    "data-compression": {
-        "cpu-requests": "1000m",
-        "memory-requests": "1G",
+    "aggregator": {
+        "cpu-requests": "700m",
+        "memory-requests": "700M",
         "max-replica": 3,
         "external_services": [
-            "db",
+            "machine-learning",
             "detection"
         ],
         "type": "service"
     },
-    "db": {
-        "cpu-requests": "500m",
-        "memory-requests": "1G",
-        "external_services": {},
-        "max-replica": 1,
+    "detection": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1000M",
+        "max-replica": 3,
+        "external_services": [],
         "type": "service"
     },
+    "db": {
+        "cpu-requests": "700m",
+        "memory-requests": "700M",
+        "external_services": [],
+        "max-replica": 3,
+        "type": "persistent",
+        "layer": "edge"
+    },
     "machine-learning": {
-        "cpu-requests": "1000m",
-        "memory-requests": "1G",
-        "external_services": {},
+        "cpu-requests": "2000m",
+        "memory-requests": "2G",
+        "external_services": [
+            "db"
+        ],
         "max-replica": 3,
         "type": "service"
     }

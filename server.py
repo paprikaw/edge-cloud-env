@@ -1,35 +1,59 @@
 from flask import Flask, request, jsonify
 from testbed_env import TestBedEnv
 from sb3_contrib import MaskablePPO
+from env import MicroserviceEnv
+import json
+import os
+from datetime import datetime
+import logging
 app = Flask(__name__)
-env = TestBedEnv(5, 8)
-model = MaskablePPO.load("./tmp_models2/best_model.zip", env=env)
+env = TestBedEnv(7, 13)
+simuEnv = MicroserviceEnv(is_training=False, num_nodes=7, num_pods=13)
+simuEnv.reset()
+model = MaskablePPO.load("./models/v8-new/best_model.zip", env=env)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # 确保logger级别设置为DEBUG
 # 定义一个 POST 端点，用于接收客户端发送的 JSON 数据
 @app.route('/get_action', methods=['POST'])
 def get_action():
     try:
         # 获取请求中的 JSON 数据
         data = request.get_json()
-
+        # print(data)
         # 解析 cluster_state 和 pod_deployable
         cluster_state = data.get("cluster_state", {})
         pod_deployable = data.get("pod_deployable", [])
-        obs, info = env.reset(ClusterState=cluster_state, PodDeployable=pod_deployable)
-        print(obs)
-        # 构建伪数据响应 (PodName 和 TargetNode)
-        response_data = []
-        for pod in pod_deployable:
-            response_data.append({
-                "pod_name": pod["pod_name"],
-                "target_node": "tb-edge-vm3"  # 伪数据: 假设所有 pod 都调度到 tb-edge-vm3
-            })
+        # 将cluster_state存储到本地的json文件中
 
-        # 返回伪数据响应
+        # 创建logs目录（如果不存在）
+        if not os.path.exists('logs'):
+            os.makedirs('logs')
+
+        obs, info = env.reset(ClusterState=cluster_state, PodDeployable=pod_deployable)
+        logger.debug(f"obs: {obs}")
+        mask = env.action_masks()
+        action, _states = model.predict(obs, deterministic=True, action_masks=mask)
+        node, pod = "", ""
+        if int(action) != env.stopped_action:
+            node, pod = env.get_action(action)
+            logger.info(f"action: target node: {node}, target pod: {pod}")
+            logger.info(f"simu action: {simuEnv.get_action_name(action)}")
+        else:
+            logger.info(f"action: stop")
+
+        response_data = {
+            "pod_name": pod,
+            "target_node": node,
+            "is_stop": int(action) == env.stopped_action
+        }
+
         return jsonify(response_data), 200
 
     except Exception as e:
+        logger.error(e)
         return jsonify({"status": "error", "message": str(e)}), 400
 
 if __name__ == '__main__':
     # 启动 Flask 服务器，监听 5000 端口
+    logger.info("server start")
     app.run(host='0.0.0.0', port=5000)

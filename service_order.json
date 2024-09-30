@@ -1,6 +1,7 @@
 [
     "client",
-    "data-compression",
+    "aggregator",
+    "detection",
     "db",
     "machine-learning"
 ]

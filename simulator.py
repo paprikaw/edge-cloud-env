@@ -50,14 +50,14 @@ class MicroserviceSimulator:
         nodes_config = self._load_profiling_data(node_config_path) # 加载节点配置
         for layer, node_types in nodes_config["cluster_setup"].items():
             for node_type, config in node_types.items():
-                node_count = random.randint(config["count_range"][0], config["count_range"][1])
-                for _ in range(node_count):
+                node_count = config["count"]
+                for i in range(node_count):
                     cpu_availability = parser.parse_cpu_requests(random.choice(config["cpu_availability"]))
                     memory_availability = parser.parse_memory(random.choice(config["memory_availability"]))
                     bandwidth = parser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
                     bandwidth_usage = parser.parse_percentage(random.choice(config["bandwidth_utilization"])) * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
-                    node_name = f"{node_type}_{self.node_incre_id}"
+                    node_name = f"{node_type}-{i+1}"
                     node_id = self.node_incre_id
                     self.nodes[node_id] = Node(
                         node_id=node_id,
@@ -70,7 +70,7 @@ class MicroserviceSimulator:
                         bandwidth=bandwidth,
                         layer=layer
                     )
-                    node_list.append(node_type)
+                    node_list.append(node_name)
                     self.node_layer_map.setdefault(layer, []).append(node_id)
                     logger.debug(f"Initialized node: {node_name} with CPU Type: {cpu_type}, CPU: {cpu_availability}, Memory: {memory_availability}, Bandwidth: {bandwidth}, Bandwidth Usage: {bandwidth_usage}")
                     self.node_incre_id += 1
@@ -82,12 +82,12 @@ class MicroserviceSimulator:
     def _find_available_nodes(self, app_name: str, pod_id: int) -> List[int]:
         """Find available nodes for a pod"""
         pod = self.get_app(app_name).get_pod(pod_id)
-        if pod.type == "service":
+        if pod.layer == "all":
             nodes = self.node_layer_map["cloud"] + self.node_layer_map["edge"]
         else:
-            nodes = self.node_layer_map["client"]
-    
+            nodes = self.node_layer_map[pod.layer]
         available_nodes = [node_id for node_id in nodes if self.get_node(node_id).check_resource(pod.cpu_requests, pod.memory_requests)]
+        random.shuffle(available_nodes)
         return available_nodes
 
     def get_node(self, node_id: int)->Node:
@@ -210,10 +210,10 @@ class MicroserviceSimulator:
     def predict_bandwidth(self, ms_app_id: str, instance_id: str) -> int:
         """预测微服务实例的带宽, 这个function十分重要，是我们的bandwidth预测模型"""
         ms_app = self.apps[ms_app_id]
-        instance = ms_app.get_pod(instance_id)
-        node = self.nodes[instance.node_id]
+        pod = ms_app.get_pod(instance_id)
+        node = self.nodes[pod.node_id]
 
-        bandwidth_usage_without_instance = node.bandwidth_usage - instance.total_bandwidth
+        bandwidth_usage_without_instance = node.bandwidth_usage - pod.total_bandwidth
         if bandwidth_usage_without_instance / node.bandwidth < 0.9:
             return node.bandwidth - bandwidth_usage_without_instance
         else:
@@ -252,7 +252,7 @@ class MicroserviceSimulator:
             """Helper function to recursively calculate latency for each call"""
             # 获取当前 Call 的执行时间            execution_time = call.execution_time.get(cpu_type, 0)
 
-            # 计算当前call的平均执行时间
+            # 计算当前call的平均执行
             replica_set = app.get_replica_set(call.name)
             avg_execution_latency = 0
             for pod_id in replica_set:
@@ -263,7 +263,7 @@ class MicroserviceSimulator:
                 avg_execution_latency += execution_time 
             avg_execution_latency /= len(replica_set)
 
-            # 计算并行调用中的最大延迟
+            # 计算并行调用中的平均延迟
             max_parallel_latency = 0
             for call_group in call.call_groups:
                 latency = 0
@@ -306,7 +306,7 @@ class MicroserviceSimulator:
     def get_all_pods(self) -> List[int]:
         all_service_instances = []
         for app in self.apps.values():
-            service_instances = [instance.id for instance in app.pods.values() if instance.type == "service"]
+            service_instances = [instance.id for instance in app.pods.values() if instance.type == "service" or instance.type == "persistent"]
             all_service_instances.extend(service_instances)
         return all_service_instances
 
@@ -338,6 +338,7 @@ class MicroserviceSimulator:
             for pod_id, pod in app.pods.items():
                 ms_info[ms_name]["pods"][pod.name] = {
                     "node_id": pod.node_id,
+                    "node_name": self.nodes[pod.node_id].node_name,
                     "cpu_requests": pod.cpu_requests,
                     "memory_requests": pod.memory_requests,
                     "total_bandwidth": pod.total_bandwidth

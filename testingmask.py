@@ -1,15 +1,16 @@
 from sb3_contrib import MaskablePPO
-from env import MicroserviceEnv
+from maskenv import MicroserviceMaskEnv
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
 from gymnasium.wrappers import FlattenObservation
 import logging
 
 logging.basicConfig(level=logging.INFO)
-env = MicroserviceEnv(is_training=False, num_nodes=5, num_pods=8)
-model = MaskablePPO.load("./tmp_models/best_model.zip", env=env)
+env = MicroserviceMaskEnv(is_training=False, num_nodes=7, num_pods=13)
+model = MaskablePPO.load("./models/v8-new/best_model.zip", env=env)
 # evaluate_policy(model, env, n_eval_episodes=1, reward_threshold=-100, warn=True)
 obs, info = env.reset()
 done = False
+logger = logging.getLogger(__name__)
 
 while not done:
     action_masks = env.action_masks()

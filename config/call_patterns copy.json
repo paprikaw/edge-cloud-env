@@ -1,0 +1,86 @@
+{
+    "detection": {
+        "client": "client",
+        "call-path": [
+            {
+                "aggregator": {
+                    "data-size": "2M",
+                    "execution-time": {
+                        "0": "6ms",
+                        "1": "8ms",
+                        "2": "10ms"
+                    },
+                    "call-path": [
+                        {
+                            "machine-learning": {
+                                "data-size": "1M",
+                                "execution-time": {
+                                    "0": "40ms",
+                                    "1": "60ms",
+                                    "2": "80ms"
+                                },
+                                "call-path": [
+                                    {
+                                        "db": {
+                                            "data-size": "1M",
+                                            "execution-time": {
+                                                "0": "2.6ms",
+                                                "1": "3.9ms",
+                                                "2": "5.2ms"
+                                            },
+                                            "call-path": []
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "detection": {
+                                "data-size": "1M",
+                                "execution-time": {
+                                    "0": "20ms",
+                                    "1": "30ms",
+                                    "2": "40ms"
+                                },
+                                "call-path": []
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "rps": 5,
+        "qos": "180ms"
+    },
+    "data-persistent": {
+        "client": "client",
+        "call-path": [
+            {
+                "data-compression": {
+                    "data-size": "2M",
+                    "execution-time": {
+                        "0": "20ms",
+                        "1": "40ms",
+                        "2": "50ms"
+                    },
+                    "call-path": [
+                        {
+                            "detection": {
+                                "data-size": "1M",
+                                "execution-time": {
+                                    "0": "20ms",
+                                    "1": "30ms",
+                                    "2": "40ms"
+                                },
+                                "call-path": []
+                            }
+                        }
+                    ]
+                }
+            },
+
+        ],
+        "rps": 5,
+        "qos": "180ms"
+    }
+}

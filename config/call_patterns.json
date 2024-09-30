@@ -3,21 +3,44 @@
         "client": "client",
         "call-path": [
             {
-                "data-compression": {
-                    "data-size": "2M",
+                "aggregator": {
+                    "data-size": "0.1M",
                     "execution-time": {
-                        "0": "20ms",
-                        "1": "40ms",
-                        "2": "50ms"
+                        "0": "7ms",
+                        "1": "10.5ms",
+                        "2": "14ms"
                     },
                     "call-path": [
                         {
                             "machine-learning": {
-                                "data-size": "1M",
+                                "data-size": "0.1M",
                                 "execution-time": {
-                                    "0": "200ms",
-                                    "1": "300ms",
-                                    "2": "400ms"
+                                    "0": "46ms",
+                                    "1": "69ms",
+                                    "2": "92ms"
+                                },
+                                "call-path": [
+                                    {
+                                        "db": {
+                                            "data-size": "0.1M",
+                                            "execution-time": {
+                                                "0": "2.1ms",
+                                                "1": "3.15ms",
+                                                "2": "4.2ms"
+                                            },
+                                            "call-path": []
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "detection": {
+                                "data-size": "0.1M",
+                                "execution-time": {
+                                    "0": "12.5ms",
+                                    "1": "18.75ms",
+                                    "2": "25ms"
                                 },
                                 "call-path": []
                             }
@@ -26,25 +49,7 @@
                 }
             }
         ],
-        "rps": 10,
-        "qos": "180ms"
-    },
-    "data-persistent": {
-        "client": "data-compression",
-        "call-path": [
-            {
-                "db": {
-                    "data-size": "2M",
-                    "execution-time": {
-                        "0": "10ms",
-                        "1": "15ms",
-                        "2": "20ms"
-                    },
-                    "call-path": []
-                }
-            }
-        ],
-        "rps": 10,
-        "qos": "180ms"
+        "rps": 5,
+        "qos": "80ms"
     }
 }

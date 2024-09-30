@@ -1,0 +1,105 @@
+{
+    "nodes": {
+        "tb-client-vm1": {
+            "node_name": "tb-client-vm1",
+            "cpu_availability": 400,
+            "memory_availability": 3338854400,
+            "bandwidth_usage": 72496
+        },
+        "tb-cloud-vm1": {
+            "node_name": "tb-cloud-vm1",
+            "cpu_availability": 2180,
+            "memory_availability": 24958672896,
+            "bandwidth_usage": 681554
+        },
+        "tb-edge-vm1": {
+            "node_name": "tb-edge-vm1",
+            "cpu_availability": 875,
+            "memory_availability": 6830354432,
+            "bandwidth_usage": 68090
+        },
+        "tb-edge-vm2": {
+            "node_name": "tb-edge-vm2",
+            "cpu_availability": 275,
+            "memory_availability": 2936201216,
+            "bandwidth_usage": 67361
+        },
+        "tb-edge-vm3": {
+            "node_name": "tb-edge-vm3",
+            "cpu_availability": 2500,
+            "memory_availability": 15029702656,
+            "bandwidth_usage": 109138
+        }
+    },
+    "services": {
+        "client": {
+            "service_name": "client",
+            "pods": [
+                {
+                    "node_name": "tb-client-vm1",
+                    "pod_name": "client-6fc64b77d-7s59f"
+                }
+            ]
+        },
+        "data-compression": {
+            "service_name": "data-compression",
+            "pods": [
+                {
+                    "node_name": "tb-cloud-vm1",
+                    "pod_name": "data-compression-cc948f66d-blgh7"
+                },
+                {
+                    "node_name": "tb-cloud-vm1",
+                    "pod_name": "data-compression-cc948f66d-g4gzm"
+                },
+                {
+                    "node_name": "tb-cloud-vm1",
+                    "pod_name": "data-compression-cc948f66d-mmvqb"
+                }
+            ]
+        },
+        "db": {
+            "service_name": "db",
+            "pods": [
+                {
+                    "node_name": "tb-cloud-vm1",
+                    "pod_name": "db-567757c9fc-524bq"
+                }
+            ]
+        },
+        "detection": {
+            "service_name": "detection",
+            "pods": [
+                {
+                    "node_name": "tb-cloud-vm1",
+                    "pod_name": "detection-684648b988-9kwdn"
+                },
+                {
+                    "node_name": "tb-edge-vm3",
+                    "pod_name": "detection-684648b988-qz8ls"
+                },
+                {
+                    "node_name": "tb-edge-vm2",
+                    "pod_name": "detection-684648b988-zp7w9"
+                }
+            ]
+        },
+        "machine-learning": {
+            "service_name": "machine-learning",
+            "pods": [
+                {
+                    "node_name": "tb-edge-vm3",
+                    "pod_name": "machine-learning-6775b4f597-j82s9"
+                },
+                {
+                    "node_name": "tb-cloud-vm1",
+                    "pod_name": "machine-learning-6775b4f597-knxx8"
+                },
+                {
+                    "node_name": "tb-edge-vm1",
+                    "pod_name": "machine-learning-6775b4f597-vdb66"
+                }
+            ]
+        }
+    }
+}

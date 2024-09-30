@@ -5,7 +5,7 @@ from typing import Dict, List
 from call import Call
 
 class Pod:
-    def __init__(self, name: str, id: int, service_name: str, cpu_requests: float, memory_requests: float, num_replicas: int, type: str, node_id: int=-1, is_scheduled: bool=True):
+    def __init__(self, name: str, id: int, service_name: str, cpu_requests: float, memory_requests: float, num_replicas: int, type: str, layer: str="all", node_id: int=-1, is_scheduled: bool=True):
         self.name = name
         self.id = id
         self.service_name = service_name
@@ -14,7 +14,8 @@ class Pod:
         self.num_replicas = num_replicas
         self.node_id = node_id
         self.total_bandwidth = 0
-        self.type = type # service / client
+        self.type = type # service / persistent
+        self.layer = layer # edge / cloud / client / all(without client layer)
         self.is_scheduled = is_scheduled
 
     def is_instance_of(self, ms_name):

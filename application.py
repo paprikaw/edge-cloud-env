@@ -7,6 +7,7 @@ from pod import Pod
 from endpoint import Endpoint
 import logging
 from service import Service
+logger = logging.getLogger(__name__)
 class Application:
     def __init__(self, microservices_config_path: str, calls_config_path: str, app_name: str):
         self.incre_id = 0
@@ -30,6 +31,7 @@ class Application:
 
         # 初始化microserivces和endpoints
         self._initialize_pods()
+        logger.debug(self.pods)
         self._init_endpoints()
 
 
@@ -56,7 +58,8 @@ class Application:
                     cpu_requests=parser.parse_cpu_requests(service_meta_data["cpu-requests"]),
                     memory_requests=parser.parse_memory(service_meta_data["memory-requests"]),
                     num_replicas=num_replicas,
-                    type=service_meta_data["type"]
+                    type=service_meta_data["type"],
+                    layer=service_meta_data.get("layer", "all")
                 )
                 self.pods[self.incre_id]=pod
                 self.bandwidth_adj_list[pod.id] = []

@@ -10,14 +10,14 @@ from node import Node
 from pod import Pod
 
 logger = logging.getLogger(__name__)
-class MicroserviceEnv(gym.Env):
+class MicroserviceMaskEnv(gym.Env):
     """
     Env Version 1:
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
     def __init__(self, is_training=True, isMask=True, num_nodes=0, num_pods=0):
-        super(MicroserviceEnv, self).__init__()
+        super(MicroserviceMaskEnv, self).__init__()
         
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
@@ -26,8 +26,6 @@ class MicroserviceEnv(gym.Env):
         # 定义最低延迟和最大奖励
         self.episode = 0
         self.cluster_reset_interval_by_episode = 1
-        self.step_cnt = 0
-        self.invalid_training_step = 100000
         if is_training:
             self.max_episode_steps = 100
         else:
@@ -101,24 +99,12 @@ class MicroserviceEnv(gym.Env):
                 self.pods.append(pod)
             for _ in range(service.sched_replica_cnt, service.max_replica_cnt):
                 self.pods.append(Pod("dummy", -1, "dummy", 0, 0, 0, "dummy","dummy", 0, False))
-        pod_layer_map = {
-            "cloud": 0,
-            "edge": 1,
-            "client": 2,
-            "all": 3,
-            "dummy": 4
-        }
         layer_map = {
             "cloud": 0,
             "edge": 1,
             "client": 2,
         }
 
-        pod_type_map = {
-            "persistent": 0,
-            "service": 1,
-            "dummy": 2
-        }
         # 构建节点的状态
         nodes_state = {
             "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
@@ -134,8 +120,6 @@ class MicroserviceEnv(gym.Env):
         ms_state = {
             # "Pod_id": np.array(self.pod_ids, dtype=np.int32),
             "Pod_node_id": np.array([pod.node_id for pod in self.pods], dtype=np.int32),
-            "Pod_layer": np.array([pod_layer_map[pod.layer] for pod in self.pods], dtype=np.int32),
-            "Pod_type": np.array([pod_type_map[pod.type] for pod in self.pods], dtype=np.int32),
             # "Pod_total_bandwidth": np.array([pod.total_bandwidth for pod in self.pods], dtype=np.float32),
             "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
             "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
@@ -161,10 +145,7 @@ class MicroserviceEnv(gym.Env):
         return self.nodes[node_id].node_name, self.pods[pod_id].get_name()
     
     def step(self, action):
-        self.step_cnt += 1
         if action == self.stopped_action:
-            if self.step_cnt < self.invalid_training_step:
-                return self._get_state(), -2, False, False, {}
             logger.info("Stop action selected")
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {self.latency_func()}")
             if not self.is_training:
@@ -189,10 +170,8 @@ class MicroserviceEnv(gym.Env):
         elif cur_latency <= qos_threshold:
             logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
             done = True
-        elif not self.isMask and not self.check_valid_action(pod, node):
-            reward = -10
-            done = True
-            logger.info("Action resulted in a failure: Node not deployable")
+        elif not self.check_valid_action(pod, node):
+            assert(False)
         else:
             before_latency = cur_latency
             self.simulator.migrate_pods(self.app_name, pod_id, node_id)
