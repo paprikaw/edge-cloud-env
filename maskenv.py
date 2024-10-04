@@ -26,6 +26,7 @@ class MicroserviceMaskEnv(gym.Env):
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
         self.is_training = is_training
+        self.step_reward_func = lambda simulator : simulator.get_latency_between_layers("client", "cloud") / 40
 
         # 定义最低延迟和最大奖励
         self.episode = 0
@@ -58,8 +59,8 @@ class MicroserviceMaskEnv(gym.Env):
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "Cur_latency": spaces.Box(low=0, high=2000, shape=(1,), dtype=np.float32),
-            "Latency": spaces.Box(low=0, high=500, shape=(1,), dtype=np.float32),
-            # "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
+            "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
+            "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
         })
 
         # "Node_cpu_type": spaces.MultiDiscrete([4] * num_nodes),
@@ -109,6 +110,7 @@ class MicroserviceMaskEnv(gym.Env):
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
             "Latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
+            # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
             # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),
@@ -136,7 +138,7 @@ class MicroserviceMaskEnv(gym.Env):
         state = {
             **nodes_state,
             **ms_state,
-            # "time_step": np.array([self.episode_steps], dtype=np.int32)
+            "time_step": np.array([self.episode_steps], dtype=np.int32)
         }
         logger.info(f"state: {state}")
         # print(state)
@@ -202,8 +204,8 @@ class MicroserviceMaskEnv(gym.Env):
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
-            reward -= self.simulator.get_latency_between_layers("client", "cloud") / 40
-        logger.info(f"reward: {reward}")
+            reward -= (self.simulator.get_latency_between_layers("client", "cloud") / 40) + 0.1 * self.episode_steps
+        # logger.info(f"reward: {reward}")
         # logger.info(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")
         state = self._get_state() if not done else None
         return state, reward, done, False, {}
@@ -249,8 +251,9 @@ class MicroserviceMaskEnv(gym.Env):
     def render(self, mode="human"):
         pass
 
-    def end_reward(self)->float:
-        return -self.simulator.get_latency_between_layers("client", "cloud") / 40 * self.episode_steps
+    def end_reward(self, para: float)->float:
+        return 
+
     def check_valid_action(self, pod, node)->bool:
         if not pod.is_scheduled or \
             pod.get_node_id() == node.get_id() or \

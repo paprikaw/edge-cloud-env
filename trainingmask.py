@@ -12,7 +12,7 @@ from maskenv import MicroserviceMaskEnv
 import logging
 logging.basicConfig(level=logging.ERROR)
 # version = "v12-mask-ppo-latency/diffstepdiff-staticenv-200"
-version = "v12/mask-ppo/diffstepdiff-dynamicenv-200"
+version = "v14/mask-ppo/dynamicenv-200"
 if __name__ == "__main__":
     env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True)
     env = Monitor(env)
