@@ -16,9 +16,15 @@ class MicroserviceEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_training=True, isMask=True, num_nodes=0, num_pods=0):
+    def __init__(self, is_training=False, dynamic_env=True, num_nodes=0, num_pods=0):
         super(MicroserviceEnv, self).__init__()
         
+        self.microservices_config_path = './config/services.json'
+        self.calls_config_path = './config/call_patterns.json'
+        self.node_config_path = './config/nodes.json'
+        if not dynamic_env:
+            self.node_config_path = './config/nodes-simple.json'
+
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
         self.is_training = is_training
@@ -27,19 +33,17 @@ class MicroserviceEnv(gym.Env):
         self.episode = 0
         self.cluster_reset_interval_by_episode = 1
         self.step_cnt = 0
-        self.invalid_training_step = 100000
+        self.invalid_training_step = 50000
+        self.stopped_action = num_nodes * num_pods
         if is_training:
             self.max_episode_steps = 100
         else:
             self.max_episode_steps = 10
-
         self.num_nodes = num_nodes
         self.num_pods = num_pods
         self.nodes: List[Node] = []
         self.pods: List[Pod] = []
-        self.isMask = isMask
         self.action_space = spaces.Discrete(num_nodes * num_pods+1)
-        self.all_masked = False
         self.observation_space = spaces.Dict({
             "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),
             "Node_cpu_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
@@ -53,7 +57,10 @@ class MicroserviceEnv(gym.Env):
             "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
             "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
+            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
+            "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
+            "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
         })
 
         # "Node_cpu_type": spaces.MultiDiscrete([4] * num_nodes),
@@ -113,7 +120,6 @@ class MicroserviceEnv(gym.Env):
             "edge": 1,
             "client": 2,
         }
-
         pod_type_map = {
             "persistent": 0,
             "service": 1,
@@ -127,9 +133,17 @@ class MicroserviceEnv(gym.Env):
             "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),
-            "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32)
+            "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
+            "client_latency": np.array([self.simulator.get_latency_between_layers("client", "client"),
+                                        self.simulator.get_latency_between_layers("client", "edge"),
+                                        self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
+            "edge_latency": np.array([ self.simulator.get_latency_between_layers("edge", "edge"),
+                                      self.simulator.get_latency_between_layers("edge", "client"),
+                                      self.simulator.get_latency_between_layers("edge", "cloud")], dtype=np.float32),
+            "cloud_latency": np.array([self.simulator.get_latency_between_layers("cloud", "cloud"),
+                                      self.simulator.get_latency_between_layers("cloud", "client"),
+                                      self.simulator.get_latency_between_layers("cloud", "edge")], dtype=np.float32),
         }
-
         # 构建微服务实例的状态
         ms_state = {
             # "Pod_id": np.array(self.pod_ids, dtype=np.int32),
@@ -145,7 +159,6 @@ class MicroserviceEnv(gym.Env):
             **nodes_state,
             **ms_state
         }
-        # print(state)
         return state
 
     def get_action(self, action: int)->tuple[Node, Pod]:
@@ -162,6 +175,15 @@ class MicroserviceEnv(gym.Env):
     
     def step(self, action):
         self.step_cnt += 1
+        if action == self.stopped_action:
+            if self.is_training and self.step_cnt < self.invalid_training_step:
+                return self._get_state(), -2, False, False, {}
+
+            logger.info("Stop action selected")
+            logger.info(f"Episode steps: {self.episode_steps}, Final latency: {self.latency_func()}")
+            if not self.is_training:
+                self.simulator.output_simulator_status_to_file("./logs/test_end.json")
+            return None, -2, True, False, {}
         node, pod = self.get_action(action)
         node_id = node.get_id()
         pod_id = pod.get_id()
@@ -174,15 +196,11 @@ class MicroserviceEnv(gym.Env):
         reward = 0
         done = False
         # No node can be selected 
-        if self.all_masked:
-            assert(False)
-            done = True
-        # QoS threshold reached, episode ends
-        elif cur_latency <= qos_threshold:
+        if cur_latency <= qos_threshold:
             logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
             done = True
         elif not self.check_valid_action(pod, node):
-            reward = -20
+            reward = -10
             done = True
             logger.info("Action resulted in a failure: Node not deployable")
         else:
@@ -205,8 +223,8 @@ class MicroserviceEnv(gym.Env):
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {cur_latency}")
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
-        else:
-            reward -= 2
+        elif self.step_cnt > self.invalid_training_step:
+            reward -=2
         # logger.info(f"reward: {reward}")
         # logger.info(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")
         state = self._get_state() if not done else None
@@ -283,7 +301,8 @@ class MicroserviceEnv(gym.Env):
         在一些情况下，可能microservice无法在既有资源下完成部署
         '''
         for i in range(100):
-            self.simulator = MicroserviceSimulator()
+            self.simulator = MicroserviceSimulator(self.microservices_config_path, self.calls_config_path, self.node_config_path)
+            self.simulator.output_simulator_status_to_file("./logs/node_init.json")
             if self._init_simulator(self.simulator, self.app_name):
                 return
         assert(False)

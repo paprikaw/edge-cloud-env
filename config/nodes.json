@@ -19,19 +19,19 @@
     },
     "latency": {
         "edge": {
-            "cloud": "50ms",
-            "client": "0.1ms",
-            "edge": "0.1ms"
+            "cloud": ["50ms", "500ms"],
+            "client": ["0.1ms", "0.1ms"],
+            "edge": ["0.1ms", "0.1ms"]
         },
         "client": {
-            "cloud": "50ms",
-            "client": "0.1ms",
-            "edge": "0.1ms"
+            "cloud": ["50ms", "500ms"],
+            "client": ["0.1ms", "0.1ms"],
+            "edge": ["0.1ms", "0.1ms"]
         },
         "cloud": {
-            "cloud": "0.1ms",
-            "client": "50ms",
-            "edge": "50ms"
+            "cloud": ["0.1ms", "0.1ms"],
+            "client": ["50ms", "500ms"],
+            "edge": ["50ms", "500ms"]
         }
     },
     "cluster_setup": {
@@ -40,21 +40,14 @@
                 "count": 2,
                 "cpu_availability": [
                     "2",
-                    "3",
-                    "4",
                     "5"
                 ],
                 "memory_availability": [
                     "2G",
-                    "4G",
-                    "8G",
-                    "12G",
-                    "16G",
-                    "20G",
-                    "24G",
                     "27.68G"
                 ],
                 "bandwidth_utilization": [
+                    "0",
                     "0"
                 ]
             }
@@ -72,6 +65,7 @@
                     "7.3G"
                 ],
                 "bandwidth_utilization": [
+                    "0",
                     "0"
                 ]
             },
@@ -79,17 +73,14 @@
                 "count": 2,
                 "cpu_availability": [
                     "2",
-                    "3",
                     "4"
                 ],
                 "memory_availability": [
                     "2G",
-                    "4G",
-                    "8G",
-                    "12G",
                     "15G"
                 ],
                 "bandwidth_utilization": [
+                    "0",
                     "0"
                 ]
             }
@@ -103,10 +94,10 @@
                 ],
                 "memory_availability": [
                     "1.3G",
-                    "4.3G",
                     "7.3G"
                 ],
                 "bandwidth_utilization": [
+                    "0",
                     "0"
                 ]
             }

@@ -1,6 +1,6 @@
 import json
 import random
-import parser
+import myparser as parser
 from typing import Dict, List
 from call import Call
 from pod import Pod

@@ -31,8 +31,7 @@
         "memory-requests": "700M",
         "external_services": [],
         "max-replica": 3,
-        "type": "persistent",
-        "layer": "edge"
+        "type": "service"
     },
     "machine-learning": {
         "cpu-requests": "2000m",

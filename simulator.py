@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 from pod import Pod
 from application import Application
 from node import Node
-import parser
+import myparser
 from typing import Dict, cast, List
 from call import Call
 import logging
@@ -15,24 +15,22 @@ from endpoint import Endpoint
 logger = logging.getLogger(__name__)
 
 class MicroserviceSimulator:
-    def __init__(self):
-        self.microservices_config_path = './config/services.json'
-        self.calls_config_path = './config/call_patterns.json'
-        self.node_config_path = './config/nodes.json'
+    def __init__(self, service_config_path = None, call_config_path = None, node_config_path = None):
+        if service_config_path is None or call_config_path is None or node_config_path is None:
+            raise Exception("Please provide the config path")
 
-        self.node_incre_id = 0 # 节点ID
+        self.node_incre_id = 1 # 节点ID
         self.nodes: Dict[int, Node] = {} # 存储所有的节点
         self.latency_between_layer: Dict[str, Dict[str, float]] = {} # 存储不同层级之间的延迟
         self.node_layer_map: Dict[str, List[int]] = {} # 存储不同层级的节点
         self.cpu_types: List[str] = ["A", "B", "C", "D"]
         self.layers: List[str] = ["cloud", "edge", "client"]
-        self._init_nodes(self.node_config_path)  # 初始化节点信息
+        self._init_nodes(node_config_path)  # 初始化节点信息
+        self.cloud_latency = random.uniform(50, 200) 
 
 
         self.apps: Dict[str, Application] = {} # Dict[app_name, Application]
-        self.load_app(self.microservices_config_path, self.calls_config_path, "iot-ms-app")
-
-
+        self.load_app(service_config_path, call_config_path, "iot-ms-app")
 
     def _load_profiling_data(self, path):
         with open(path, 'r') as json_file:
@@ -41,8 +39,21 @@ class MicroserviceSimulator:
     def _init_layer_latency(self, latency_config):
         """初始化节点之间的延迟信息"""
         for layer, latencies in latency_config.items():
-            for target_layer, latency in latencies.items():
-                self.latency_between_layer.setdefault(layer, {})[target_layer] = parser.parse_time(latency)
+            for target_layer, latency_range in latencies.items():
+                assert(isinstance(latency_range, list))
+                assert(len(latency_range) == 2)
+                latency = random.uniform(myparser.parse_time(latency_range[0]), myparser.parse_time(latency_range[1]))
+                self.latency_between_layer.setdefault(layer, {})[target_layer] = latency
+
+    def get_latency_between_layers(self, layer: str, target_layer: str) -> float:
+        """获取两个层级之间的延迟"""
+        if layer == target_layer:
+            return 1.0
+        if target_layer == "cloud":
+            return self.cloud_latency
+        if layer == "cloud":
+            return self.cloud_latency
+        return 1.0
 
     def _init_nodes(self, node_config_path):
         """从配置文件中初始化节点资源"""
@@ -52,10 +63,16 @@ class MicroserviceSimulator:
             for node_type, config in node_types.items():
                 node_count = config["count"]
                 for i in range(node_count):
-                    cpu_availability = parser.parse_cpu_requests(random.choice(config["cpu_availability"]))
-                    memory_availability = parser.parse_memory(random.choice(config["memory_availability"]))
-                    bandwidth = parser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
-                    bandwidth_usage = parser.parse_percentage(random.choice(config["bandwidth_utilization"])) * float(bandwidth)
+                    cpu_lower_bound = myparser.parse_cpu_requests(config["cpu_availability"][0])
+                    cpu_upper_bound = myparser.parse_cpu_requests(config["cpu_availability"][1])
+                    memory_lower_bound = myparser.parse_memory(config["memory_availability"][0])
+                    memory_upper_bound = myparser.parse_memory(config["memory_availability"][1])
+                    bandwidth_lower_bound = myparser.parse_percentage(config["bandwidth_utilization"][0])
+                    bandwidth_upper_bound = myparser.parse_percentage(config["bandwidth_utilization"][1])
+                    bandwidth = myparser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
+                    cpu_availability = random.uniform(cpu_lower_bound, cpu_upper_bound)
+                    memory_availability = random.uniform(memory_lower_bound, memory_upper_bound)
+                    bandwidth_usage = random.uniform(bandwidth_lower_bound, bandwidth_upper_bound) * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
                     node_name = f"{node_type}-{i+1}"
                     node_id = self.node_incre_id
@@ -224,7 +241,7 @@ class MicroserviceSimulator:
         """计算两个节点之间的延迟"""
         node1 = self.nodes[node_id1]
         node2 = self.nodes[node_id2]
-        return self.latency_between_layer[node1.layer][node2.layer]
+        return self.get_latency_between_layers(node1.layer, node2.layer)
 
     def _bandwidth_latency_between_instances(self, ms_app_id: str, instance_id1: str, instance_id2: str, data_size: int):
         bandwidth_between_instance = min(self.predict_bandwidth(ms_app_id, instance_id1), self.predict_bandwidth(ms_app_id, instance_id2))
@@ -236,8 +253,9 @@ class MicroserviceSimulator:
         """
         ms_app = self.apps[ms_app_id]
         instance_1, instance_2 = ms_app.get_pod(instance_id1), ms_app.get_pod(instance_id2)
-
-        return self._bandwidth_latency_between_instances(ms_app_id, instance_id1, instance_id2, data_size) + self._latency_between_nodes(instance_1.node_id, instance_2.node_id)
+        bandwidth_latency = self._bandwidth_latency_between_instances(ms_app_id, instance_id1, instance_id2, data_size)
+        assert(bandwidth_latency < 1)
+        return bandwidth_latency + self._latency_between_nodes(instance_1.node_id, instance_2.node_id)
 
     def _get_pod_node(self, ms_app_id: str, pod_id: int) -> Node:
         """获取微服务实例所在的节点"""
@@ -338,7 +356,7 @@ class MicroserviceSimulator:
             for pod_id, pod in app.pods.items():
                 ms_info[ms_name]["pods"][pod.name] = {
                     "node_id": pod.node_id,
-                    "node_name": self.nodes[pod.node_id].node_name,
+                    "node_name": "no_node" if pod.node_id == -1 else self.nodes[pod.node_id].node_name,
                     "cpu_requests": pod.cpu_requests,
                     "memory_requests": pod.memory_requests,
                     "total_bandwidth": pod.total_bandwidth

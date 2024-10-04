@@ -1,14 +1,14 @@
 from flask import Flask, request, jsonify
 from testbed_env import TestBedEnv
 from sb3_contrib import MaskablePPO
-from maskenv import MicroserviceEnv
+from maskenv import MicroserviceMaskEnv
 import json
 import os
 from datetime import datetime
 import logging
 app = Flask(__name__)
 env = TestBedEnv(7, 13)
-simuEnv = MicroserviceEnv(is_training=False, num_nodes=7, num_pods=13)
+simuEnv = MicroserviceMaskEnv(is_training=False, num_nodes=7, num_pods=13)
 simuEnv.reset()
 model = MaskablePPO.load("./models/v8-new/best_model.zip", env=env)
 logger = logging.getLogger(__name__)
@@ -23,12 +23,11 @@ def get_action():
         # 解析 cluster_state 和 pod_deployable
         cluster_state = data.get("cluster_state", {})
         pod_deployable = data.get("pod_deployable", [])
-        # 将cluster_state存储到本地的json文件中
 
         # 创建logs目录（如果不存在）
         if not os.path.exists('logs'):
             os.makedirs('logs')
-
+        logger.info(f"pod_deployable: {pod_deployable}")
         obs, info = env.reset(ClusterState=cluster_state, PodDeployable=pod_deployable)
         logger.debug(f"obs: {obs}")
         mask = env.action_masks()

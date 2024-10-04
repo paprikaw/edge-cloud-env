@@ -1,7 +1,7 @@
 from call import Call
 import json
 from typing import Dict, List
-import parser
+import myparser as parser
 import logging
 
 class Endpoint:
