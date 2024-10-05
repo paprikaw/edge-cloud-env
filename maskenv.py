@@ -16,7 +16,11 @@ class MicroserviceMaskEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0):
+    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0, relative_para=None, accumulated_para=None):
+        if relative_para is None or accumulated_para is None:
+            raise ValueError("relative_para is required")
+        self.relative_para = relative_para
+        self.accumulated_para = accumulated_para
         super(MicroserviceMaskEnv, self).__init__()
         self.microservices_config_path = './config/services.json'
         self.calls_config_path = './config/call_patterns.json'
@@ -32,7 +36,7 @@ class MicroserviceMaskEnv(gym.Env):
         self.episode = 0
         self.cluster_reset_interval_by_episode = 1
         if is_training:
-            self.max_episode_steps = 100
+            self.max_episode_steps = 1000
         else:
             self.max_episode_steps = 100
         self.num_nodes = num_nodes
@@ -58,7 +62,7 @@ class MicroserviceMaskEnv(gym.Env):
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            # "Cur_latency": spaces.Box(low=0, high=2000, shape=(1,), dtype=np.float32),
+            "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
             "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
             "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
         })
@@ -71,6 +75,7 @@ class MicroserviceMaskEnv(gym.Env):
         # self.action_space = spaces.MultiDiscrete([num_nodes, num_ms])
     def reset(self, seed=None, options=None):
         '''Reset simulator, this happened during the end of the episode'''
+        self.isDone = False
         self.episode_steps = 0
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
@@ -110,7 +115,7 @@ class MicroserviceMaskEnv(gym.Env):
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
             "Latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
-            # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
+            "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
             # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),
@@ -162,6 +167,7 @@ class MicroserviceMaskEnv(gym.Env):
             logger.warning(f"Episode steps: {self.episode_steps}, Final latency: {self.latency_func()}")
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
+            self.isDone = True
             return None, 0, True, False, {}
         node, pod = self.get_action(action)
         node_id = node.get_id()
@@ -204,12 +210,16 @@ class MicroserviceMaskEnv(gym.Env):
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
-            reward -= (self.simulator.get_latency_between_layers("client", "cloud") / 40) + 0.1 * self.episode_steps
+            reward -= (cur_latency / self.relative_para) + self.accumulated_para * self.episode_steps
+            # reward -= 2 + self.accumulated_para * self.episode_steps
         # logger.info(f"reward: {reward}")
         # logger.info(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")
         state = self._get_state() if not done else None
+        self.isDone = done
         return state, reward, done, False, {}
 
+    def is_done(self)->bool:
+        return self.isDone
     # def latency_func(self) -> float:
     #     total_contribution = 0
     #     total_latency = 0

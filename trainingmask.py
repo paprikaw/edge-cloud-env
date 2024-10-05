@@ -9,22 +9,26 @@ from agents.a2c import A2C
 from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
 from stable_baselines3.common.callbacks import BaseCallback
 from maskenv import MicroserviceMaskEnv 
+from custom_callbacks import LatencyCallback
+import variables as v
 import logging
 logging.basicConfig(level=logging.ERROR)
 # version = "v12-mask-ppo-latency/diffstepdiff-staticenv-200"
-version = "v14/mask-ppo/dynamicenv-200"
+name = f"v{v.version}/mask-ppo/dynamicenv-{v.dynamic_latency}-relative-{v.relative_para}-acc-{v.accumulated_para}"
 if __name__ == "__main__":
-    env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True)
+    print(f"parameters: relative_para: {v.relative_para}, accumulated_para: {v.accumulated_para}")
+    env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=v.dynamic_env, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
     env = Monitor(env)
     eval_callback = MaskableEvalCallback(
-        env,                       
-        best_model_save_path='./models/' + version,
+        env,
+        best_model_save_path='./models/' + name,
         log_path='./logs/results/',       
         eval_freq=10000,                  
         deterministic=True,
         render=False,
         n_eval_episodes=50
     )
+    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
 
     # # 自定义回调函数来记录训练信息
     # class CustomCallback(BaseCallback):
@@ -44,12 +48,13 @@ if __name__ == "__main__":
 
     # custom_callback = CustomCallback()
     # model = A2C("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{version}")
-    model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{version}")
+    model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # 训练代理
     try:
-        model.learn(total_timesteps=10000000,callback=eval_callback)
+        model.learn(total_timesteps=10000000,callback=[eval_callback, latency_callback])
         # 保存模型
-        model.save(f"./models/{version}/model")
+        model.save(f"./models/{name}/model")
     except KeyboardInterrupt:
         print("Training interrupted. Saving the model.")
-        model.save(f"./models/{version}/model")
+        model.save(f"./models/{name}/model")
+    print(f"parameters: relative_para: {env.relative_para}, accumulated_para: {env.accumulated_para}")

@@ -18,4 +18,8 @@ log:
     native-exponential-reward: 很天真的把relative reward直接赋给exponential reward
 
 v14:
-    试图使用relative reward
+    试图使用使用acumulated reward, 加上当前的latency作为step reward.
+
+    80-0.1:不行，太保守了，学习的比较慢
+    40-0.5: 同样的问题
+    我感觉关键在于agent学习的速度

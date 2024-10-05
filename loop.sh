@@ -12,7 +12,7 @@ do
         exit 0
     else
         echo "No detection found in run #$i"
-    fi
+    firandom.uniform(50, 200)
 
     echo "------------------------"
 done
