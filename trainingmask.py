@@ -14,7 +14,6 @@ from custom_callbacks import LatencyCallback
 import variables as v
 import logging
 logging.basicConfig(level=logging.ERROR)
-num_cpu = 8
 # version = "v12-mask-ppo-latency/diffstepdiff-staticenv-200"
 name = f"v{v.version}/mask-ppo/dynamicenv-{v.dynamic_latency}-relative-{v.relative_para}-acc-{v.accumulated_para}"
 def make_env():
@@ -33,7 +32,7 @@ def make_env():
 
 if __name__ == "__main__":
     print(f"parameters: relative_para: {v.relative_para}, accumulated_para: {v.accumulated_para}")
-    env = SubprocVecEnv([make_env() for i in range(num_cpu)])
+    env = SubprocVecEnv([make_env() for i in range(v.num_cpu)])
     eval_callback = MaskableEvalCallback(
         env,
         best_model_save_path='./models/' + name,
