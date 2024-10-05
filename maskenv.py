@@ -30,7 +30,6 @@ class MicroserviceMaskEnv(gym.Env):
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
         self.is_training = is_training
-        self.step_reward_func = lambda simulator : simulator.get_latency_between_layers("client", "cloud") / 40
 
         # 定义最低延迟和最大奖励
         self.episode = 0

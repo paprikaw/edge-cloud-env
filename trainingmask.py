@@ -2,23 +2,38 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.policies import BasePolicy
-from stable_baselines3 import DQN
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3 import DDPG
 from sb3_contrib import MaskablePPO
 from agents.a2c import A2C
 from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
 from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.env_util import make_vec_env
 from maskenv import MicroserviceMaskEnv 
 from custom_callbacks import LatencyCallback
 import variables as v
 import logging
 logging.basicConfig(level=logging.ERROR)
+num_cpu = 8
 # version = "v12-mask-ppo-latency/diffstepdiff-staticenv-200"
 name = f"v{v.version}/mask-ppo/dynamicenv-{v.dynamic_latency}-relative-{v.relative_para}-acc-{v.accumulated_para}"
+def make_env():
+    """
+    Utility function for multiprocessed env.
+    
+    :param env_id: (str) the environment ID
+    :param num_env: (int) the number of environment you wish to have in subprocesses
+    :param seed: (int) the inital seed for RNG
+    :param rank: (int) index of the subprocess
+    """
+    def _init():
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=v.dynamic_env, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
+        return env
+    return _init
+
 if __name__ == "__main__":
     print(f"parameters: relative_para: {v.relative_para}, accumulated_para: {v.accumulated_para}")
-    env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=v.dynamic_env, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
-    env = Monitor(env)
+    env = SubprocVecEnv([make_env() for i in range(num_cpu)])
     eval_callback = MaskableEvalCallback(
         env,
         best_model_save_path='./models/' + name,
