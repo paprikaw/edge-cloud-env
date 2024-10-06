@@ -215,7 +215,7 @@ class MicroserviceMaskEnv(gym.Env):
         # logger.info(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")
         state = self._get_state() if not done else None
         self.isDone = done
-        return state, reward, done, False, {}
+        return state, reward, done, False, {"terminal_observation": state}
 
     def is_done(self)->bool:
         return self.isDone

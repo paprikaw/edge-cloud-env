@@ -27,6 +27,7 @@ def make_env():
     """
     def _init():
         env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=v.dynamic_env, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
+        env = Monitor(env)
         return env
     return _init
 
