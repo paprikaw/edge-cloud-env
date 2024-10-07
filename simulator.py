@@ -26,7 +26,7 @@ class MicroserviceSimulator:
         self.cpu_types: List[str] = ["A", "B", "C", "D"]
         self.layers: List[str] = ["cloud", "edge", "client"]
         self._init_nodes(node_config_path)  # 初始化节点信息
-        self.cloud_latency = random.uniform(50, 200) 
+        self.cloud_latency = random.uniform(50, 200)
 
 
         self.apps: Dict[str, Application] = {} # Dict[app_name, Application]
@@ -70,9 +70,9 @@ class MicroserviceSimulator:
                     bandwidth_lower_bound = myparser.parse_percentage(config["bandwidth_utilization"][0])
                     bandwidth_upper_bound = myparser.parse_percentage(config["bandwidth_utilization"][1])
                     bandwidth = myparser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
-                    cpu_availability = random.uniform(cpu_lower_bound, cpu_upper_bound)
-                    memory_availability = random.uniform(memory_lower_bound, memory_upper_bound)
-                    bandwidth_usage = random.uniform(bandwidth_lower_bound, bandwidth_upper_bound) * float(bandwidth)
+                    cpu_availability = cpu_lower_bound + random.betavariate(5, 2) * (cpu_upper_bound - cpu_lower_bound)
+                    memory_availability = memory_lower_bound + random.betavariate(5, 2) * (memory_upper_bound - memory_lower_bound)
+                    bandwidth_usage = bandwidth_lower_bound + random.betavariate(5, 2) * (bandwidth_upper_bound - bandwidth_lower_bound) * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
                     node_name = f"{node_type}-{i+1}"
                     node_id = self.node_incre_id

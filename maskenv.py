@@ -61,8 +61,9 @@ class MicroserviceMaskEnv(gym.Env):
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
-            "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
+            "Latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
+            # "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
+            # "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
             "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
         })
 
@@ -113,8 +114,9 @@ class MicroserviceMaskEnv(gym.Env):
             # "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
-            "Latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
-            "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
+            # "Latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
+            "Latency": np.array([self.latency_func()], dtype=np.float32),
+            # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
             # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),

@@ -11,11 +11,19 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from maskenv import MicroserviceMaskEnv 
 from custom_callbacks import LatencyCallback
-import variables as v
+from dotenv import load_dotenv
+import os
 import logging
+load_dotenv(override=False)
 logging.basicConfig(level=logging.ERROR)
-# version = "v12-mask-ppo-latency/diffstepdiff-staticenv-200"
-name = f"v{v.version}/mask-ppo/dynamicenv-{v.dynamic_latency}-relative-{v.relative_para}-acc-{v.accumulated_para}"
+version = os.getenv("VERSION")
+dynamic_latency = int(os.getenv("DYNAMIC_LATENCY"))
+relative_para = int(os.getenv("RELATIVE_PARA"))
+accumulated_para = float(os.getenv("ACCUMULATED_PARA"))
+cpu_num = int(os.getenv("NUM_CPU"))
+name = f"v{version}/mask-ppo/dynamicenv-{dynamic_latency}-relative-{relative_para}-acc-{accumulated_para}"
+print(f"parameters: version: {version}, relative_para: {relative_para}, accumulated_para: {accumulated_para}, cpu: {cpu_num}")
+
 def make_env():
     """
     Utility function for multiprocessed env.
@@ -26,14 +34,19 @@ def make_env():
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=v.dynamic_env, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
         env = Monitor(env)
         return env
     return _init
 
 if __name__ == "__main__":
-    print(f"parameters: relative_para: {v.relative_para}, accumulated_para: {v.accumulated_para}")
-    env = SubprocVecEnv([make_env() for i in range(v.num_cpu)])
+    if cpu_num == 0:
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
+        env = Monitor(env)
+    else:
+        env = SubprocVecEnv([make_env() for i in range(cpu_num)])
+    # env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
+
     eval_callback = MaskableEvalCallback(
         env,
         best_model_save_path='./models/' + name,
@@ -43,7 +56,7 @@ if __name__ == "__main__":
         render=False,
         n_eval_episodes=50
     )
-    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13, relative_para=v.relative_para, accumulated_para=v.accumulated_para)
+    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13, relative_para=relative_para, accumulated_para=accumulated_para)
 
     # # 自定义回调函数来记录训练信息
     # class CustomCallback(BaseCallback):
@@ -66,10 +79,10 @@ if __name__ == "__main__":
     model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # 训练代理
     try:
-        model.learn(total_timesteps=10000000,callback=[eval_callback, latency_callback])
+        model.learn(total_timesteps=8000000,callback=[eval_callback, latency_callback])
         # 保存模型
         model.save(f"./models/{name}/model")
     except KeyboardInterrupt:
         print("Training interrupted. Saving the model.")
         model.save(f"./models/{name}/model")
-    print(f"parameters: relative_para: {env.relative_para}, accumulated_para: {env.accumulated_para}")
+    print(f"parameters: relative_para: {env.relative_para}, accumulated_para: {accumulated_para}")
