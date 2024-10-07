@@ -27,5 +27,4 @@ v14:
     200-0.5: 候选
     我感觉关键在于agent学习的速度
 v15: 
-    使用beta variate，增加集群high availability下的数据
-    
+    加上final reward

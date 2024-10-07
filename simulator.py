@@ -15,7 +15,7 @@ from endpoint import Endpoint
 logger = logging.getLogger(__name__)
 
 class MicroserviceSimulator:
-    def __init__(self, service_config_path = None, call_config_path = None, node_config_path = None):
+    def __init__(self, service_config_path = None, call_config_path = None, node_config_path = None, cloud_latency = None):
         if service_config_path is None or call_config_path is None or node_config_path is None:
             raise Exception("Please provide the config path")
 
@@ -24,9 +24,9 @@ class MicroserviceSimulator:
         self.latency_between_layer: Dict[str, Dict[str, float]] = {} # 存储不同层级之间的延迟
         self.node_layer_map: Dict[str, List[int]] = {} # 存储不同层级的节点
         self.cpu_types: List[str] = ["A", "B", "C", "D"]
-        self.layers: List[str] = ["cloud", "edge", "client"]
+        self.layers: List[str] = ["cloud", "edge", "client"]    
         self._init_nodes(node_config_path)  # 初始化节点信息
-        self.cloud_latency = random.uniform(50, 200)
+        self.cloud_latency = cloud_latency
 
 
         self.apps: Dict[str, Application] = {} # Dict[app_name, Application]
@@ -35,7 +35,8 @@ class MicroserviceSimulator:
     def _load_profiling_data(self, path):
         with open(path, 'r') as json_file:
             return json.load(json_file)
-
+    def set_cloud_latency(self, latency):
+        self.cloud_latency = latency
     def _init_layer_latency(self, latency_config):
         """初始化节点之间的延迟信息"""
         for layer, latencies in latency_config.items():
@@ -70,9 +71,10 @@ class MicroserviceSimulator:
                     bandwidth_lower_bound = myparser.parse_percentage(config["bandwidth_utilization"][0])
                     bandwidth_upper_bound = myparser.parse_percentage(config["bandwidth_utilization"][1])
                     bandwidth = myparser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
-                    cpu_availability = cpu_lower_bound + random.betavariate(5, 2) * (cpu_upper_bound - cpu_lower_bound)
-                    memory_availability = memory_lower_bound + random.betavariate(5, 2) * (memory_upper_bound - memory_lower_bound)
-                    bandwidth_usage = bandwidth_lower_bound + random.betavariate(5, 2) * (bandwidth_upper_bound - bandwidth_lower_bound) * float(bandwidth)
+                    # cpu_availability = cpu_lower_bound + random.betavariate(5, 2) * (cpu_upper_bound - cpu_lower_bound)
+                    cpu_availability = random.uniform(cpu_lower_bound, cpu_upper_bound)
+                    memory_availability = random.uniform(memory_lower_bound, memory_upper_bound)
+                    bandwidth_usage =  random.uniform(bandwidth_lower_bound, bandwidth_upper_bound) * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
                     node_name = f"{node_type}-{i+1}"
                     node_id = self.node_incre_id

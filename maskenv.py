@@ -61,7 +61,7 @@ class MicroserviceMaskEnv(gym.Env):
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            "Latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
+            "Latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
             # "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
             # "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
             "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
@@ -77,6 +77,7 @@ class MicroserviceMaskEnv(gym.Env):
         '''Reset simulator, this happened during the end of the episode'''
         self.isDone = False
         self.episode_steps = 0
+        self.cloud_latency = random.uniform(50, 200)
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
         self._init_valid_simulator()
@@ -136,6 +137,7 @@ class MicroserviceMaskEnv(gym.Env):
         ms_state = {
             # "Pod_id": np.array(self.pod_ids, dtype=np.int32),
             "Pod_node_id": np.array([pod.node_id for pod in self.pods], dtype=np.int32),
+            # "Pod_layer": np.array([pod.layer for pod in self.pods], dtype=np.int32),
             # "Pod_total_bandwidth": np.array([pod.total_bandwidth for pod in self.pods], dtype=np.float32),
             # "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
             # "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
@@ -149,6 +151,12 @@ class MicroserviceMaskEnv(gym.Env):
         logger.info(f"state: {state}")
         # print(state)
         return state
+
+    def set_cloud_latency(self, latency):
+        self.cloud_latency = latency
+        self.simulator.set_cloud_latency(latency)
+    def set_cur_timestep(self, timestep):
+        self.episode_steps = timestep
 
     def get_action(self, action: int)->tuple[Node, Pod]:
         num_pods = self.num_pods
@@ -208,6 +216,8 @@ class MicroserviceMaskEnv(gym.Env):
 
         if done:
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {cur_latency}")
+            if cur_latency <= qos_threshold:
+                reward += 100
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
@@ -218,7 +228,6 @@ class MicroserviceMaskEnv(gym.Env):
         state = self._get_state() if not done else None
         self.isDone = done
         return state, reward, done, False, {"terminal_observation": state}
-
     def is_done(self)->bool:
         return self.isDone
     # def latency_func(self) -> float:
@@ -317,7 +326,7 @@ class MicroserviceMaskEnv(gym.Env):
         在一些情况下，可能microservice无法在既有资源下完成部署
         '''
         for i in range(100):
-            self.simulator = MicroserviceSimulator(self.microservices_config_path, self.calls_config_path, self.node_config_path)
+            self.simulator = MicroserviceSimulator(self.microservices_config_path, self.calls_config_path, self.node_config_path, self.cloud_latency)
             if self._init_simulator(self.simulator, self.app_name):
                 return
         assert(False)
