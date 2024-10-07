@@ -20,9 +20,12 @@ version = os.getenv("VERSION")
 dynamic_latency = int(os.getenv("DYNAMIC_LATENCY"))
 relative_para = int(os.getenv("RELATIVE_PARA"))
 accumulated_para = float(os.getenv("ACCUMULATED_PARA"))
+final_reward = float(os.getenv("FINAL_REWARD"))
 cpu_num = int(os.getenv("NUM_CPU"))
-name = f"v{version}/mask-ppo/dynamicenv-{dynamic_latency}-relative-{relative_para}-acc-{accumulated_para}"
-print(f"parameters: version: {version}, relative_para: {relative_para}, accumulated_para: {accumulated_para}, cpu: {cpu_num}")
+# v14name = f"v{version}/mask-ppo/dynamicenv-{dynamic_latency}-relative-{relative_para}-acc-{accumulated_para}-final-{final_reward}"
+# 15name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
+name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
+print(f"parameters: version: {version}, relative_para: {relative_para}, accumulated_para: {accumulated_para}, cpu: {cpu_num}, final_reward: {final_reward}")
 
 def make_env():
     """
@@ -34,14 +37,14 @@ def make_env():
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward)
         env = Monitor(env)
         return env
     return _init
 
 if __name__ == "__main__":
     if cpu_num == 0:
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward)
         env = Monitor(env)
     else:
         env = SubprocVecEnv([make_env() for i in range(cpu_num)])
@@ -56,7 +59,7 @@ if __name__ == "__main__":
         render=False,
         n_eval_episodes=50
     )
-    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13, relative_para=relative_para, accumulated_para=accumulated_para)
+    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward)
 
     # # 自定义回调函数来记录训练信息
     # class CustomCallback(BaseCallback):

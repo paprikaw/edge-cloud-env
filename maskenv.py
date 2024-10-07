@@ -16,11 +16,12 @@ class MicroserviceMaskEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0, relative_para=None, accumulated_para=None):
-        if relative_para is None or accumulated_para is None:
+    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0, relative_para=None, accumulated_para=None, final_reward=None):
+        if relative_para is None or accumulated_para is None or final_reward is None:
             raise ValueError("relative_para is required")
         self.relative_para = relative_para
         self.accumulated_para = accumulated_para
+        self.final_reward = final_reward
         super(MicroserviceMaskEnv, self).__init__()
         self.microservices_config_path = './config/services.json'
         self.calls_config_path = './config/call_patterns.json'
@@ -61,10 +62,10 @@ class MicroserviceMaskEnv(gym.Env):
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            "Latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
+            "Layer_latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
             # "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
             # "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
-            "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
+            # "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
         })
 
         # "Node_cpu_type": spaces.MultiDiscrete([4] * num_nodes),
@@ -77,7 +78,7 @@ class MicroserviceMaskEnv(gym.Env):
         '''Reset simulator, this happened during the end of the episode'''
         self.isDone = False
         self.episode_steps = 0
-        self.cloud_latency = random.uniform(50, 200)
+        self.cloud_latency = random.uniform(50, 50)
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
         self._init_valid_simulator()
@@ -115,8 +116,8 @@ class MicroserviceMaskEnv(gym.Env):
             # "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
-            # "Latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
-            "Latency": np.array([self.latency_func()], dtype=np.float32),
+            "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
+            # "Latency": np.array([self.latency_func()], dtype=np.float32),
             # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
             # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
@@ -146,7 +147,7 @@ class MicroserviceMaskEnv(gym.Env):
         state = {
             **nodes_state,
             **ms_state,
-            "time_step": np.array([self.episode_steps], dtype=np.int32)
+            # "time_step": np.array([self.episode_steps], dtype=np.int32)
         }
         logger.info(f"state: {state}")
         # print(state)
@@ -190,11 +191,11 @@ class MicroserviceMaskEnv(gym.Env):
         reward = 0
         done = False
 
-        if cur_latency <= qos_threshold:
-            assert(False) 
-            logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
-            done = True
-        elif not self.check_valid_action(pod, node):
+        # if cur_latency <= qos_threshold:
+        #     assert(False) 
+        #     logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
+        #     done = True
+        if not self.check_valid_action(pod, node):
             assert(False)
         else:
             before_latency = cur_latency
@@ -213,15 +214,16 @@ class MicroserviceMaskEnv(gym.Env):
 
         if self.episode_steps >= self.max_episode_steps or (not self.is_training and cur_latency <= qos_threshold):
             done = True
-
         if done:
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {cur_latency}")
             if cur_latency <= qos_threshold:
-                reward += 100
+                reward += self.final_reward
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
-            reward -= (cur_latency / self.relative_para) + self.accumulated_para * self.episode_steps
+            # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
+            reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
+            # reward -= (cur_latency / self.relative_para)  + self.accumulated_para * self.episode_steps
             # reward -= 2 + self.accumulated_para * self.episode_steps
         # logger.info(f"reward: {reward}")
         # logger.info(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")

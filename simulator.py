@@ -64,17 +64,10 @@ class MicroserviceSimulator:
             for node_type, config in node_types.items():
                 node_count = config["count"]
                 for i in range(node_count):
-                    cpu_lower_bound = myparser.parse_cpu_requests(config["cpu_availability"][0])
-                    cpu_upper_bound = myparser.parse_cpu_requests(config["cpu_availability"][1])
-                    memory_lower_bound = myparser.parse_memory(config["memory_availability"][0])
-                    memory_upper_bound = myparser.parse_memory(config["memory_availability"][1])
-                    bandwidth_lower_bound = myparser.parse_percentage(config["bandwidth_utilization"][0])
-                    bandwidth_upper_bound = myparser.parse_percentage(config["bandwidth_utilization"][1])
+                    cpu_availability = myparser.parse_cpu_requests(random.choice(config["cpu_availability"]))
+                    memory_availability = myparser.parse_memory(random.choice(config["memory_availability"]))
                     bandwidth = myparser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
-                    # cpu_availability = cpu_lower_bound + random.betavariate(5, 2) * (cpu_upper_bound - cpu_lower_bound)
-                    cpu_availability = random.uniform(cpu_lower_bound, cpu_upper_bound)
-                    memory_availability = random.uniform(memory_lower_bound, memory_upper_bound)
-                    bandwidth_usage =  random.uniform(bandwidth_lower_bound, bandwidth_upper_bound) * float(bandwidth)
+                    bandwidth_usage = myparser.parse_percentage(random.choice(config["bandwidth_utilization"])) * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
                     node_name = f"{node_type}-{i+1}"
                     node_id = self.node_incre_id

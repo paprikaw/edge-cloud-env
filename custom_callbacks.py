@@ -1,13 +1,14 @@
 from stable_baselines3.common.callbacks import BaseCallback
 from maskenv import MicroserviceMaskEnv
 class LatencyCallback(BaseCallback):
-    def __init__(self, verbose=0, repeat_target=10, num_nodes=7, num_pods=13, relative_para=20, accumulated_para=0.05):
+    def __init__(self, verbose=0, repeat_target=10, num_nodes=7, num_pods=13, relative_para=20, accumulated_para=0.05, final_reward=100):
         super().__init__(verbose)
         self.repeat_target = repeat_target
         self.num_nodes = num_nodes
         self.num_pods = num_pods
         self.relative_para = relative_para
         self.accumulated_para = accumulated_para
+        self.final_reward = final_reward
     def _on_step(self) -> bool:
         return True
 
@@ -17,13 +18,15 @@ class LatencyCallback(BaseCallback):
                                   num_pods=self.num_pods, 
                                   dynamic_env=False, 
                                   relative_para=self.relative_para, 
-                                  accumulated_para=self.accumulated_para)
+                                  accumulated_para=self.accumulated_para,
+                                  final_reward=self.final_reward)
         env2 = MicroserviceMaskEnv(is_training=True, 
                                   num_nodes=self.num_nodes, 
                                   num_pods=self.num_pods, 
                                   dynamic_env=True, 
                                   relative_para=self.relative_para, 
-                                  accumulated_para=self.accumulated_para)
+                                  accumulated_para=self.accumulated_para,
+                                  final_reward=self.final_reward)
         acc_after_latency1 = 0
         acc_after_latency2 = 0
         maximum_step1 = 0

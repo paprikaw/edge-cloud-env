@@ -17,7 +17,7 @@ class TestBedEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, num_nodes, num_pods):
+    def __init__(self, num_nodes, num_pods, layer_latency):
         super(TestBedEnv, self).__init__()
         self.ClusterState = {} 
         self.PodDeployable = {} 
@@ -81,12 +81,13 @@ class TestBedEnv(gym.Env):
             "Node_memory_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth_usage": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
-            "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
-            "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            # "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            # "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
             "Pod_node_id": spaces.MultiDiscrete([num_nodes] * num_pods),  # Current node of each microservice
+            "Layer_latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
-            "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
+            # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
         })
 
         with open('node_name_order.json', 'r') as f:
@@ -97,7 +98,7 @@ class TestBedEnv(gym.Env):
         self.num_pods = num_pods
         self.nodes: List[Node] = []
         self.pods: List[Pod] = []
-
+        self.layer_latency = layer_latency
         self.action_space = spaces.Discrete(num_nodes * num_pods+1)
         self.stopped_action = num_nodes * num_pods
         self.all_masked = False
@@ -160,11 +161,12 @@ class TestBedEnv(gym.Env):
             "Node_memory_availability": np.array(self.node_memory_availability, dtype=np.float32),
             # "Node_bandwidth_usage": np.array(self.node_bandwidth_usage, dtype=np.float32),
             # "Node_bandwidth": np.array(self.node_bandwidth, dtype=np.float32),
-            "Node_layer": np.array(self.node_layer, dtype=np.int32),
-            "Node_cpu_type": np.array(self.node_cpu_type, dtype=np.int32),
+            # "Node_layer": np.array(self.node_layer, dtype=np.int32),
+            # "Node_cpu_type": np.array(self.node_cpu_type, dtype=np.int32),
             "Pod_node_id": np.array(self.pod_node_ids, dtype=np.int32),
-            "Pod_cpu_requests": np.array(self.pod_cpu_requests, dtype=np.float32),
-            "Pod_memory_requests": np.array(self.pod_memory_requests, dtype=np.float32)
+            "Layer_latency": np.array([self.layer_latency], dtype=np.float32),
+            # "Pod_cpu_requests": np.array(self.pod_cpu_requests, dtype=np.float32),
+            # "Pod_memory_requests": np.array(self.pod_memory_requests, dtype=np.float32)
         }
 
         # 返回初始 observation
