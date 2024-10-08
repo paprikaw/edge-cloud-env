@@ -16,18 +16,16 @@ import os
 import logging
 load_dotenv(override=True)
 logging.basicConfig(level=logging.ERROR)
-version = os.getenv("VERSION")
-dynamic_latency = int(os.getenv("DYNAMIC_LATENCY"))
-relative_para = int(os.getenv("RELATIVE_PARA"))
-accumulated_para = float(os.getenv("ACCUMULATED_PARA"))
-final_reward = float(os.getenv("FINAL_REWARD"))
-cpu_num = int(os.getenv("NUM_CPU"))
 step_panelty = 1.25
-end_panelty = 0
-# v14name = f"v{version}/mask-ppo/dynamicenv-{dynamic_latency}-relative-{relative_para}-acc-{accumulated_para}-final-{final_reward}"
-# name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
+cpu_num = 4
+name = f"old_mimic-partial-obs-step-{step_panelty}-state-less-duplicate"
 
-def make_env(relative_para, accumulated_para, final_reward, step_panelty, end_panelty):
+def createEnv():
+    env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, is_testing=False, step_panelty=step_panelty)
+    env = Monitor(env)
+    return env
+
+def make_env(step_panelty):
     """
     Utility function for multiprocessed env.
     
@@ -37,20 +35,17 @@ def make_env(relative_para, accumulated_para, final_reward, step_panelty, end_pa
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward, step_panelty=step_panelty, end_panelty=end_panelty)
-        env = Monitor(env)
+        env = createEnv()
         return env
     return _init
 
 if __name__ == "__main__":
-    name = f"old_mimic-partial-obs-step-{step_panelty}-end-{end_panelty}-state-less"
-    print(f"relative_para: {relative_para}, accumulated_para: {accumulated_para}, final_reward: {final_reward}, step_panelty: {step_panelty}, end_panelty: {end_panelty}")
+    print(f"step_panelty: {step_panelty}")
+    print(f"name: {name}")
     if cpu_num == 0:
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward, step_panelty=step_panelty, end_panelty=end_panelty)
-        env = Monitor(env)
+        env = createEnv()
     else:
-        env = SubprocVecEnv([make_env(relative_para, accumulated_para, final_reward, step_panelty, end_panelty) for i in range(cpu_num)])
-    # env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
+        env = SubprocVecEnv([make_env(step_panelty) for i in range(cpu_num)])
 
     eval_callback = MaskableEvalCallback(
         env,
@@ -63,23 +58,6 @@ if __name__ == "__main__":
     )
     latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13)
 
-    # # 自定义回调函数来记录训练信息
-    # class CustomCallback(BaseCallback):
-    #     def __init__(self, verbose=0):
-    #         super(CustomCallback, self).__init__(verbose)
-    #         self.csv_file = open('./logs/training_info.csv', 'w')
-    #         self.csv_file.write("Step,Time Elapsed,Total Timesteps,Episode Length Mean,Episode Reward Mean,FPS,Iterations,Approx KL,Clip Fraction,Clip Range,Entropy Loss,Explained Variance,Learning Rate,Loss,Policy Gradient Loss,Value Loss\n")
-    #     def _on_step(self) -> bool:
-    #         if self.n_calls % 1000 == 0:
-    #             self.csv_file.write(f"{self.n_calls},{self.locals['time_elapsed']},{self.num_timesteps},{self.locals['rollout']['ep_len_mean']},{self.locals['rollout']['ep_rew_mean']},{self.locals['time']['fps']},{self.locals['time']['iterations']},{self.locals['train']['approx_kl']},{self.locals['train']['clip_fraction']},{self.locals['train']['clip_range']},{self.locals['train']['entropy_loss']},{self.locals['train']['explained_variance']},{self.locals['train']['learning_rate']},{self.locals['train']['loss']},{self.locals['train']['policy_gradient_loss']},{self.locals['train']['value_loss']}\n")
-    #             self.csv_file.flush()
-    #         return True
-
-    #     def _on_training_end(self) -> None:
-    #         self.csv_file.close()
-    #         return True
-
-    # custom_callback = CustomCallback()
     # model = A2C("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{version}")
     model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # 训练代理

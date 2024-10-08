@@ -10,20 +10,17 @@ from node import Node
 from pod import Pod
 from sb3_contrib import MaskablePPO
 logger = logging.getLogger(__name__)
+
 class MicroserviceMaskEnv(gym.Env):
     """
     Env Version 1:
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0, relative_para=400, accumulated_para=0.5, final_reward=0, step_panelty = 0, end_panelty = 0):
+    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty = 0):
         super(MicroserviceMaskEnv, self).__init__()
-        logger.info(f"step_panelty: {step_panelty}, end_panelty: {end_panelty}")
-        self.relative_para = relative_para
-        self.accumulated_para = accumulated_para
-        self.final_reward = final_reward
+        logger.info(f"step_panelty: {step_panelty}")
         self.step_panelty = step_panelty
-        self.end_panelty = end_panelty
         self.microservices_config_path = './config/services.json'
         self.calls_config_path = './config/call_patterns.json'
         self.node_config_path = './config/nodes.json'
@@ -31,15 +28,12 @@ class MicroserviceMaskEnv(gym.Env):
             self.node_config_path = './config/nodes-simple.json'
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
-        self.is_training = is_training
+        self.is_testing = is_testing
 
         # 定义最低延迟和最大奖励
         self.episode = 0
         self.cluster_reset_interval_by_episode = 1
-        if is_training:
-            self.max_episode_steps = 1000
-        else:
-            self.max_episode_steps = 100
+        self.max_episode_steps = 100
         self.num_nodes = num_nodes
         self.num_pods = num_pods
         self.nodes: List[Node] = []
@@ -83,7 +77,7 @@ class MicroserviceMaskEnv(gym.Env):
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
         self._init_valid_simulator()
-        if not self.is_training and self.episode == 0:
+        if self.is_testing and self.episode == 0:
             self.simulator.output_simulator_status_to_file("./logs/test_start.json")
         self.app = self.simulator.get_app(self.app_name)
         self.node_ids = self.simulator.get_node_ids()
@@ -157,6 +151,7 @@ class MicroserviceMaskEnv(gym.Env):
     def set_cloud_latency(self, latency):
         self.cloud_latency = latency
         self.simulator.set_cloud_latency(latency)
+
     def set_cur_timestep(self, timestep):
         self.episode_steps = timestep
 
@@ -176,10 +171,10 @@ class MicroserviceMaskEnv(gym.Env):
         if action == self.stopped_action:
             logger.warning("Stop action selected")
             logger.warning(f"Episode steps: {self.episode_steps}, Final latency: {self.latency_func()}")
-            if not self.is_training:
+            if self.is_testing:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
             self.isDone = True
-            return None, self.end_panelty, True, False, {}
+            return None, 0, True, False, {}
         node, pod = self.get_action(action)
         node_id = node.get_id()
         pod_id = pod.get_id()
@@ -192,10 +187,6 @@ class MicroserviceMaskEnv(gym.Env):
         reward = 0
         done = False
 
-        # if cur_latency <= qos_threshold:
-        #     assert(False) 
-        #     logger.info(f"Qos Threshold Reached Before Scheduling: {cur_latency}")
-        #     done = True
         if not self.check_valid_action(pod, node):
             assert(False)
         else:
@@ -203,54 +194,25 @@ class MicroserviceMaskEnv(gym.Env):
             self.simulator.migrate_pods(self.app_name, pod_id, node_id)
             cur_latency = self.latency_func()
             logger.warning(f"Latency {before_latency} -> {cur_latency}")
-            # if cur_latency > before_latency:
-            #     reward = 2*(before_latency - cur_latency)
-            # else:
             reward = before_latency - cur_latency
-            # if cur_latency <= qos_threshold:
-            #     logger.info(f"Qos Threshold Reached!")
-            #     reward += 10
             if reward < 0:
                 logger.warning("Action resulted in worse latency")
 
-        if self.episode_steps >= self.max_episode_steps or (not self.is_training and cur_latency <= qos_threshold):
+        if self.episode_steps >= self.max_episode_steps or (self.is_testing and cur_latency <= qos_threshold):
             done = True
         if done:
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {cur_latency}")
-            if cur_latency <= qos_threshold:
-                reward += self.final_reward
-            if not self.is_training:
+            if self.is_testing:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
-            if self.step_panelty > 0:
-                reward -= self.step_panelty
-            else:
-                reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para) + self.accumulated_para * self.episode_steps
-            # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
-            # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
-            # reward -= 2
-            # reward -= (cur_latency / self.relative_para)  + self.accumulated_para * self.episode_steps
-            # reward -= 2 + self.accumulated_para * self.episode_steps
-        # logger.info(f"reward: {reward}")
-        # logger.info(f"cur_latency: {cur_latency}, qos_threshold: {qos_threshold}")
+            reward -= self.step_panelty
         state = self._get_state() if not done else None
         self.isDone = done
         return state, reward, done, False, {"terminal_observation": state}
+
     def is_done(self)->bool:
         return self.isDone
-    # def latency_func(self) -> float:
-    #     total_contribution = 0
-    #     total_latency = 0
-    #     for endpoint in self.endpoints:
-    #         latency = self.simulator.end_to_end_latency(self.app_name, endpoint)
-    #         contribution = 1 / (1 + latency)  # 使用倒数函数来实现低延迟贡献高，高延迟贡献低
-    #         total_contribution += contribution
-    #         total_latency += latency
 
-    #     if total_contribution == 0:
-    #         return float('inf')  # 避免除以零的情况
-        
-    #     return total_latency / total_contribution  # 返回加权平均延迟
     def latency_func(self) -> float:
         latency = 0
         for endpoint in self.endpoints:
