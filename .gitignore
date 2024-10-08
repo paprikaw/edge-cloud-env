@@ -1,3 +1,4 @@
 *.zip
 logs/**
 __pycache__/**
+models/**

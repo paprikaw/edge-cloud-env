@@ -8,11 +8,11 @@ from stable_baselines3.common.monitor import Monitor
 
 
 logging.basicConfig(level=logging.INFO)
-env = MicroserviceEnv(is_training=False, num_nodes=7, num_pods=13, dynamic_env=False)
+env = MicroserviceEnv(is_testing=True, num_nodes=7, num_pods=13, dynamic_env=False)
 env = Monitor(env)
-# model = DQN.load("./models/v11-no-mask-dynamic-dqn/model.zip", env=env)
+model = DQN.load("./models/dqn-less-state/best_model.zip", env=env)
 # model = PPO.load("./models/v11-no-mask-dynamic-ppo/model.zip", env=env)
-model = A2C.load("./models/v11-no-mask-dynamic-a2c/model.zip", env=env)
+# model = A2C.load("./models/v11-no-mask-dynamic-a2c/model.zip", env=env)
 # evaluate_policy(model, env, n_eval_episodes=1, reward_threshold=-100, warn=True)
 obs, info = env.reset()
 done = False
