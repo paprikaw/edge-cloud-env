@@ -34,7 +34,7 @@ class MicroserviceEnv(gym.Env):
         self.episode = 0
         self.cluster_reset_interval_by_episode = 1
         self.step_cnt = 0
-        self.invalid_training_step = 50000
+        self.invalid_training_step = 0
         self.stopped_action = num_nodes * num_pods
         if is_testing:
             self.max_episode_steps = 15

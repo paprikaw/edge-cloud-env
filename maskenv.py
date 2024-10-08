@@ -41,7 +41,7 @@ class MicroserviceMaskEnv(gym.Env):
         self.action_space = spaces.Discrete(num_nodes * num_pods+1)
         self.stopped_action = num_nodes * num_pods
         self.observation_space = spaces.Dict({
-            "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),
+            # "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),
             "Node_cpu_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             "Node_memory_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth_usage": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
@@ -108,7 +108,7 @@ class MicroserviceMaskEnv(gym.Env):
 
         # 构建节点的状态
         nodes_state = {
-            "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
+            # "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
             # "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),

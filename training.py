@@ -32,7 +32,8 @@ def make_env():
     return _init
 
 if __name__ == "__main__":
-    env = SubprocVecEnv([make_env() for i in range(8)])
+    # env = SubprocVecEnv([make_env() for i in range(8)])
+    env = createEnv()
     latency_callback = NoMaskLatencyCallback(repeat_target=20, num_nodes=7, num_pods=13)
     eval_callback = EvalCallback(
         env,                       
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     # model = A2C("MultiInputPolicy", env, verbose=1)
     # 训练代理
     try:
-        model.learn(total_timesteps=8000000,callback=[eval_callback, latency_callback])
+        model.learn(total_timesteps=10000000,callback=[eval_callback, latency_callback])
         # 保存模型
         model.save(f"./models/{version}/model")
     except KeyboardInterrupt:

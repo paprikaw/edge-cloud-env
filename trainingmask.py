@@ -18,14 +18,15 @@ load_dotenv(override=True)
 logging.basicConfig(level=logging.ERROR)
 step_panelty = 1.25
 cpu_num = 4
-name = f"old_mimic-partial-obs-step-{step_panelty}-state-less-duplicate"
+total_timesteps = 4000000
+name = f"old_mimic-partial-obs-step-{step_panelty}-state-less-final"
 
 def createEnv():
     env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, is_testing=False, step_panelty=step_panelty)
     env = Monitor(env)
     return env
 
-def make_env(step_panelty):
+def make_env():
     """
     Utility function for multiprocessed env.
     
@@ -42,10 +43,11 @@ def make_env(step_panelty):
 if __name__ == "__main__":
     print(f"step_panelty: {step_panelty}")
     print(f"name: {name}")
+    print(f"total_timesteps: {total_timesteps}")
     if cpu_num == 0:
         env = createEnv()
     else:
-        env = SubprocVecEnv([make_env(step_panelty) for i in range(cpu_num)])
+        env = SubprocVecEnv([make_env() for i in range(cpu_num)])
 
     eval_callback = MaskableEvalCallback(
         env,
@@ -62,10 +64,9 @@ if __name__ == "__main__":
     model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # 训练代理
     try:
-        model.learn(total_timesteps=8000000,callback=[eval_callback, latency_callback])
+        model.learn(total_timesteps=total_timesteps,callback=[eval_callback, latency_callback])
         # 保存模型
         model.save(f"./models/{name}/model")
     except KeyboardInterrupt:
         print("Training interrupted. Saving the model.")
         model.save(f"./models/{name}/model")
-    print(f"parameters: relative_para: {env.relative_para}, accumulated_para: {accumulated_para}")
