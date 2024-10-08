@@ -10,11 +10,11 @@ class LatencyCallback(BaseCallback):
         return True
 
     def _on_rollout_end(self) -> bool:
-        env1 = MicroserviceMaskEnv(is_training=True, 
+        env1 = MicroserviceMaskEnv(is_testing=False, 
                                   num_nodes=self.num_nodes, 
                                   num_pods=self.num_pods, 
                                   dynamic_env=False)
-        env2 = MicroserviceMaskEnv(is_training=True, 
+        env2 = MicroserviceMaskEnv(is_testing=False, 
                                   num_nodes=self.num_nodes, 
                                   num_pods=self.num_pods, 
                                   dynamic_env=True)
