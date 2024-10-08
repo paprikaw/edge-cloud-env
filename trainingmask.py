@@ -23,9 +23,9 @@ accumulated_para = float(os.getenv("ACCUMULATED_PARA"))
 final_reward = float(os.getenv("FINAL_REWARD"))
 cpu_num = int(os.getenv("NUM_CPU"))
 # v14name = f"v{version}/mask-ppo/dynamicenv-{dynamic_latency}-relative-{relative_para}-acc-{accumulated_para}-final-{final_reward}"
-# 15name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
-name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
-print(f"parameters: version: {version}, relative_para: {relative_para}, accumulated_para: {accumulated_para}, cpu: {cpu_num}, final_reward: {final_reward}")
+# name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
+name = f"old_mimic-full-obs"
+print(name)
 
 def make_env():
     """

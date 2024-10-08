@@ -46,19 +46,19 @@ class MicroserviceMaskEnv(gym.Env):
         self.action_space = spaces.Discrete(num_nodes * num_pods+1)
         self.stopped_action = num_nodes * num_pods
         self.observation_space = spaces.Dict({
-            # "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),
+            "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),
             "Node_cpu_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             "Node_memory_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth_usage": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
-            # "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
-            # "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
             "Pod_node_id": spaces.MultiDiscrete([num_nodes+1] * num_pods),  # Current node of each microservice
             # "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
             # "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
-            # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
@@ -113,16 +113,16 @@ class MicroserviceMaskEnv(gym.Env):
 
         # 构建节点的状态
         nodes_state = {
-            # "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
+            "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
             "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
             # "Latency": np.array([self.latency_func()], dtype=np.float32),
             # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
-            # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
+            "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),
-            # "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
+            "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
             # "client_latency": np.array([self.simulator.get_latency_between_layers("client", "client"),
             #                             self.simulator.get_latency_between_layers("client", "edge"),
             #                             self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
@@ -140,8 +140,8 @@ class MicroserviceMaskEnv(gym.Env):
             "Pod_node_id": np.array([pod.node_id for pod in self.pods], dtype=np.int32),
             # "Pod_layer": np.array([pod.layer for pod in self.pods], dtype=np.int32),
             # "Pod_total_bandwidth": np.array([pod.total_bandwidth for pod in self.pods], dtype=np.float32),
-            # "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
-            # "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
+            "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
+            "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
         }
         # 返回状态字典
         state = {
@@ -178,7 +178,7 @@ class MicroserviceMaskEnv(gym.Env):
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
             self.isDone = True
-            return None, 0, True, False, {}
+            return None, -2, True, False, {}
         node, pod = self.get_action(action)
         node_id = node.get_id()
         pod_id = pod.get_id()
@@ -222,7 +222,8 @@ class MicroserviceMaskEnv(gym.Env):
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
             # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
-            reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
+            # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
+            reward -= 2
             # reward -= (cur_latency / self.relative_para)  + self.accumulated_para * self.episode_steps
             # reward -= 2 + self.accumulated_para * self.episode_steps
         # logger.info(f"reward: {reward}")
