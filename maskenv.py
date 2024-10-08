@@ -16,13 +16,14 @@ class MicroserviceMaskEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0, relative_para=None, accumulated_para=None, final_reward=None):
-        if relative_para is None or accumulated_para is None or final_reward is None:
-            raise ValueError("relative_para is required")
+    def __init__(self, is_training=True, dynamic_env=True, num_nodes=0, num_pods=0, relative_para=400, accumulated_para=0.5, final_reward=0, step_panelty = 0, end_panelty = 0):
+        super(MicroserviceMaskEnv, self).__init__()
+        logger.info(f"step_panelty: {step_panelty}, end_panelty: {end_panelty}")
         self.relative_para = relative_para
         self.accumulated_para = accumulated_para
         self.final_reward = final_reward
-        super(MicroserviceMaskEnv, self).__init__()
+        self.step_panelty = step_panelty
+        self.end_panelty = end_panelty
         self.microservices_config_path = './config/services.json'
         self.calls_config_path = './config/call_patterns.json'
         self.node_config_path = './config/nodes.json'
@@ -51,8 +52,8 @@ class MicroserviceMaskEnv(gym.Env):
             "Node_memory_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth_usage": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
-            "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
-            "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            # "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            # "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
             "Pod_node_id": spaces.MultiDiscrete([num_nodes+1] * num_pods),  # Current node of each microservice
             # "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
             # "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
@@ -62,7 +63,7 @@ class MicroserviceMaskEnv(gym.Env):
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            "Layer_latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
+            # "Layer_latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
             # "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
             # "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
             # "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
@@ -116,13 +117,13 @@ class MicroserviceMaskEnv(gym.Env):
             "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
-            "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
+            # "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
             # "Latency": np.array([self.latency_func()], dtype=np.float32),
             # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
-            "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
+            # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),
-            "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
+            # "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
             # "client_latency": np.array([self.simulator.get_latency_between_layers("client", "client"),
             #                             self.simulator.get_latency_between_layers("client", "edge"),
             #                             self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
@@ -178,7 +179,7 @@ class MicroserviceMaskEnv(gym.Env):
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
             self.isDone = True
-            return None, -2, True, False, {}
+            return None, self.end_panelty, True, False, {}
         node, pod = self.get_action(action)
         node_id = node.get_id()
         pod_id = pod.get_id()
@@ -221,9 +222,13 @@ class MicroserviceMaskEnv(gym.Env):
             if not self.is_training:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
+            if self.step_panelty > 0:
+                reward -= self.step_panelty
+            else:
+                reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para) + self.accumulated_para * self.episode_steps
             # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
             # reward -= (self.simulator.get_latency_between_layers("client", "cloud") / self.relative_para)
-            reward -= 2
+            # reward -= 2
             # reward -= (cur_latency / self.relative_para)  + self.accumulated_para * self.episode_steps
             # reward -= 2 + self.accumulated_para * self.episode_steps
         # logger.info(f"reward: {reward}")
@@ -273,9 +278,6 @@ class MicroserviceMaskEnv(gym.Env):
         return qos / len(self.endpoints)
     def render(self, mode="human"):
         pass
-
-    def end_reward(self, para: float)->float:
-        return 
 
     def check_valid_action(self, pod, node)->bool:
         if not pod.is_scheduled or \

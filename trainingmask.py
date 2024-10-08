@@ -14,7 +14,7 @@ from custom_callbacks import LatencyCallback
 from dotenv import load_dotenv
 import os
 import logging
-load_dotenv(override=False)
+load_dotenv(override=True)
 logging.basicConfig(level=logging.ERROR)
 version = os.getenv("VERSION")
 dynamic_latency = int(os.getenv("DYNAMIC_LATENCY"))
@@ -22,12 +22,12 @@ relative_para = int(os.getenv("RELATIVE_PARA"))
 accumulated_para = float(os.getenv("ACCUMULATED_PARA"))
 final_reward = float(os.getenv("FINAL_REWARD"))
 cpu_num = int(os.getenv("NUM_CPU"))
+step_panelty = 1.25
+end_panelty = 0
 # v14name = f"v{version}/mask-ppo/dynamicenv-{dynamic_latency}-relative-{relative_para}-acc-{accumulated_para}-final-{final_reward}"
 # name = f"v{version}/mask-ppo/dynamicenv-relative-{relative_para}-layer-{50}"
-name = f"old_mimic-full-obs"
-print(name)
 
-def make_env():
+def make_env(relative_para, accumulated_para, final_reward, step_panelty, end_panelty):
     """
     Utility function for multiprocessed env.
     
@@ -37,17 +37,19 @@ def make_env():
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward)
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward, step_panelty=step_panelty, end_panelty=end_panelty)
         env = Monitor(env)
         return env
     return _init
 
 if __name__ == "__main__":
+    name = f"old_mimic-partial-obs-step-{step_panelty}-end-{end_panelty}-state-less"
+    print(f"relative_para: {relative_para}, accumulated_para: {accumulated_para}, final_reward: {final_reward}, step_panelty: {step_panelty}, end_panelty: {end_panelty}")
     if cpu_num == 0:
-        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward)
+        env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward, step_panelty=step_panelty, end_panelty=end_panelty)
         env = Monitor(env)
     else:
-        env = SubprocVecEnv([make_env() for i in range(cpu_num)])
+        env = SubprocVecEnv([make_env(relative_para, accumulated_para, final_reward, step_panelty, end_panelty) for i in range(cpu_num)])
     # env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, relative_para=relative_para, accumulated_para=accumulated_para)
 
     eval_callback = MaskableEvalCallback(
@@ -59,7 +61,7 @@ if __name__ == "__main__":
         render=False,
         n_eval_episodes=50
     )
-    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13, relative_para=relative_para, accumulated_para=accumulated_para, final_reward=final_reward)
+    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13)
 
     # # 自定义回调函数来记录训练信息
     # class CustomCallback(BaseCallback):

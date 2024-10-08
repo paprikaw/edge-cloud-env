@@ -40,21 +40,12 @@
                 "count": 2,
                 "cpu_availability": [
                     "0",
-                    "1",
-                    "2",
                     "3",
-                    "4",
                     "5"
                 ],
                 "memory_availability": [
                     "0G",
-                    "2G",
-                    "4G",
-                    "8G",
                     "12G",
-                    "16G",
-                    "20G",
-                    "24G",
                     "27.68G"
                 ],
                 "bandwidth_utilization": [
@@ -72,7 +63,6 @@
                 ],
                 "memory_availability": [
                     "0G",
-                    "1.3G",
                     "4.3G",
                     "7.3G"
                 ],
@@ -84,17 +74,12 @@
                 "count": 2,
                 "cpu_availability": [
                     "0",
-                    "1",
                     "2",
-                    "3",
                     "4"
                 ],
                 "memory_availability": [
                     "0G",
-                    "2G",
-                    "4G",
                     "8G",
-                    "12G",
                     "15G"
                 ],
                 "bandwidth_utilization": [
@@ -107,12 +92,10 @@
                 "count": 1,
                 "cpu_availability": [
                     "0",
-                    "1",
                     "2"
                 ],
                 "memory_availability": [
                     "0G",
-                    "1.3G",
                     "4.3G",
                     "7.3G"
                 ],

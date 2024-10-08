@@ -50,17 +50,17 @@ class MicroserviceEnv(gym.Env):
             "Node_memory_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth_usage": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
-            "Node_layer": spaces.Box(low=0, high=2, shape=(num_nodes,), dtype=np.int32),
-            "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            # "Node_layer": spaces.Box(low=0, high=2, shape=(num_nodes,), dtype=np.int32),
+            # "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
             "Pod_node_id": spaces.MultiDiscrete([num_nodes] * num_pods),  # Current node of each microservice
-            "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
-            "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
+            # "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
+            # "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
             "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
             "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
+            # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
+            # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
+            # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
         })
 
         # "Node_cpu_type": spaces.MultiDiscrete([4] * num_nodes),
