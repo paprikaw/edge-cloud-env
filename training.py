@@ -8,7 +8,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from custom_callbacks import NoMaskLatencyCallback
 import logging
 logging.basicConfig(level=logging.ERROR)
-version = "dqn-less-state"
+version = "dqn-least-state"
 # version = "v11-no-mask-dynamic-ppo"
 # version = "v11-no-mask-dynamic-a2c"
 
@@ -16,7 +16,6 @@ def createEnv():
     env = MicroserviceEnv(num_nodes=7, num_pods=13, dynamic_env=True, step_panelty=2, end_panelty=2)
     env = Monitor(env)
     return env
-
 def make_env():
     """
     Utility function for multiprocessed env.
@@ -48,7 +47,7 @@ if __name__ == "__main__":
     # model = A2C("MultiInputPolicy", env, verbose=1)
     # 训练代理
     try:
-        model.learn(total_timesteps=1000000,callback=[eval_callback, latency_callback])
+        model.learn(total_timesteps=10000000,callback=[eval_callback, latency_callback])
         # 保存模型
         model.save(f"./models/{version}/model")
     except KeyboardInterrupt:

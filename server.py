@@ -12,7 +12,7 @@ env = TestBedEnv(7, 13, 50)
 # simuEnv = MicroserviceMaskEnv(is_training=False, num_nodes=7, num_pods=13)
 # simuEnv.reset()
 # model = DQN.load("./models/final/ppo.zip", env=env)
-model = MaskablePPO.load("./models/final/ppo.zip", env=env)
+model = MaskablePPO.load("./models/old_mimic-partial-obs-step-1.25-state-less-final/best_model", env=env)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # 确保logger级别设置为DEBUG
 # 定义一个 POST 端点，用于接收客户端发送的 JSON 数据

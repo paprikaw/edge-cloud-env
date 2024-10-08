@@ -30,6 +30,8 @@ class LatencyCallback(BaseCallback):
             done2 = False
             step1 = 0
             step2 = 0
+            acc_start_latency1 = env1.latency_func()
+            acc_start_latency2 = env2.latency_func()
             while not done1:
                 action_masks = env1.action_masks()
                 action, _states = self.model.predict(obs1, deterministic=True, action_masks=action_masks)
@@ -50,6 +52,8 @@ class LatencyCallback(BaseCallback):
             acc_after_latency2 += env2.latency_func()
         self.logger.record('custom_metric/avg_after_latency_static', acc_after_latency1 / self.repeat_target)
         self.logger.record('custom_metric/avg_after_latency_dynamic', acc_after_latency2 / self.repeat_target)
+        self.logger.record('custom_metric/avg_start_latency_static', acc_start_latency1 / self.repeat_target)
+        self.logger.record('custom_metric/avg_start_latency_dynamic', acc_start_latency2 / self.repeat_target)
         self.logger.record('custom_metric/maximum_step_static', maximum_step1)
         self.logger.record('custom_metric/maximum_step_dynamic', maximum_step2)
         return True
@@ -82,6 +86,8 @@ class NoMaskLatencyCallback(BaseCallback):
                 done2 = False
                 step1 = 0
                 step2 = 0
+                acc_start_latency1 = env1.latency_func()
+                acc_start_latency2 = env2.latency_func()
                 while not done1:
                     action, _states = self.model.predict(obs1, deterministic=True)
                     obs1, reward1, done1, _, info1 = env1.step(action)
@@ -100,6 +106,8 @@ class NoMaskLatencyCallback(BaseCallback):
                 acc_after_latency2 += env2.latency_func()
             self.logger.record('custom_metric/avg_after_latency_static', acc_after_latency1 / self.repeat_target)
             self.logger.record('custom_metric/avg_after_latency_dynamic', acc_after_latency2 / self.repeat_target)
+            self.logger.record('custom_metric/avg_start_latency_static', acc_start_latency1 / self.repeat_target)
+            self.logger.record('custom_metric/avg_start_latency_dynamic', acc_start_latency2 / self.repeat_target)
             self.logger.record('custom_metric/maximum_step_static', maximum_step1)
             self.logger.record('custom_metric/maximum_step_dynamic', maximum_step2)
         return True

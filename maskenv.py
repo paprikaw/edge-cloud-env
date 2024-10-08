@@ -52,8 +52,8 @@ class MicroserviceMaskEnv(gym.Env):
             # "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
             # "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
-            "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
@@ -135,8 +135,8 @@ class MicroserviceMaskEnv(gym.Env):
             "Pod_node_id": np.array([pod.node_id for pod in self.pods], dtype=np.int32),
             # "Pod_layer": np.array([pod.layer for pod in self.pods], dtype=np.int32),
             # "Pod_total_bandwidth": np.array([pod.total_bandwidth for pod in self.pods], dtype=np.float32),
-            "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
-            "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
+            # "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
+            # "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
         }
         # 返回状态字典
         state = {
