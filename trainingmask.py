@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.ERROR)
 step_panelty = 1.25
 cpu_num = 4
 total_timesteps = 10000000
-name = f"ppo-state-least-final"
+name = f"a2c-state-least"
 
 def createEnv():
     env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, is_testing=False, step_panelty=step_panelty)
@@ -60,8 +60,8 @@ if __name__ == "__main__":
     )
     latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13)
 
-    # model = A2C("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{version}")
-    model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
+    model = A2C("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
+    # model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # 训练代理
     try:
         model.learn(total_timesteps=total_timesteps,callback=[eval_callback, latency_callback])
