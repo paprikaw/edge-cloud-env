@@ -8,7 +8,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from custom_callbacks import NoMaskLatencyCallback
 import logging
 logging.basicConfig(level=logging.ERROR)
-version = "dqn-least-state"
+version = "dqn-least-state-verified"
 # version = "v11-no-mask-dynamic-ppo"
 # version = "v11-no-mask-dynamic-a2c"
 

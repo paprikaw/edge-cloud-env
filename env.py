@@ -16,7 +16,7 @@ class MicroserviceEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_testing=False, is_eval=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty=2, end_panelty=2):
+    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty=2, end_panelty=2):
         super(MicroserviceEnv, self).__init__()
         self.step_panelty = step_panelty
         self.end_panelty = end_panelty
@@ -29,10 +29,8 @@ class MicroserviceEnv(gym.Env):
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
         self.is_testing = is_testing
-        self.is_eval = is_eval
         # 定义最低延迟和最大奖励
         self.episode = 0
-        self.cluster_reset_interval_by_episode = 1
         self.step_cnt = 0
         self.invalid_training_step = 0
         self.stopped_action = num_nodes * num_pods
@@ -57,8 +55,6 @@ class MicroserviceEnv(gym.Env):
             # "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
             # "Pod_type": spaces.Box(low=0, high=2, shape=(num_pods,), dtype=np.int32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
-            # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
         })
 
         # "Node_cpu_type": spaces.MultiDiscrete([4] * num_nodes),
@@ -143,8 +139,6 @@ class MicroserviceEnv(gym.Env):
             # "Pod_layer": np.array([pod_layer_map[pod.layer] for pod in self.pods], dtype=np.int32),
             # "Pod_type": np.array([pod_type_map[pod.type] for pod in self.pods], dtype=np.int32),
             # "Pod_total_bandwidth": np.array([pod.total_bandwidth for pod in self.pods], dtype=np.float32),
-            # "Pod_cpu_requests": np.array([pod.cpu_requests for pod in self.pods], dtype=np.float32),
-            # "Pod_memory_requests": np.array([pod.memory_requests for pod in self.pods], dtype=np.float32),
         }
         # 返回状态字典
         state = {
@@ -169,8 +163,6 @@ class MicroserviceEnv(gym.Env):
     def step(self, action):
         self.step_cnt += 1
         if action == self.stopped_action:
-            if not self.is_eval and not self.is_testing and self.step_cnt < self.invalid_training_step:
-                return self._get_state(), -self.end_panelty, False, False, {}
             logger.info("Stop action selected")
             logger.info(f"Episode steps: {self.episode_steps}, Final latency: {self.latency_func()}")
             if self.is_testing:

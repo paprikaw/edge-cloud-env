@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.ERROR)
 step_panelty = 1.25
 cpu_num = 4
 total_timesteps = 10000000
-name = f"old_mimic-partial-obs-step-{step_panelty}-state-least-final"
+name = f"ppo-state-least-final"
 
 def createEnv():
     env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, is_testing=False, step_panelty=step_panelty)

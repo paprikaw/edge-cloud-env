@@ -86,10 +86,9 @@ class TestBedEnv(gym.Env):
             "Pod_node_id": spaces.MultiDiscrete([num_nodes+1] * num_pods),  # Current node of each microservice
             # "Layer_latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
             # "Pod_total_bandwidth": spaces.Box(low=0, high=100, shape=(num_pods,), dtype=np.float32), # How much bandwidth a pod has on a node.
-            "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
-            "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
+            # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
+            # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
         })
-
         with open('node_name_order.json', 'r') as f:
             self.node_name_order = json.load(f)
         with open('service_order.json', 'r') as f:
@@ -112,10 +111,10 @@ class TestBedEnv(gym.Env):
         # 根据node_name_order的顺序来踢去node信息
         self.node_cpu_availability = []
         self.node_memory_availability = []
-        self.node_bandwidth_usage = []
+        # self.node_bandwidth_usage = []
         self.node_layer = []
         self.node_cpu_type = []
-        self.node_bandwidth = []
+        # self.node_bandwidth = []
         self.node_name_id_map = {}
         self.node_is_client = []
         for i, node_name in enumerate(self.node_name_order):
@@ -124,8 +123,8 @@ class TestBedEnv(gym.Env):
             node = self.ClusterState["nodes"][node_name]
             self.node_cpu_availability.append(node["cpu_availability"] / 1000.0)
             self.node_memory_availability.append(node["memory_availability"])
-            self.node_bandwidth_usage.append(node["bandwidth_usage"] / 1000000.0) # Convert to MB
-            self.node_bandwidth.append(self.node_bandiwidth_map[node_name])
+            # self.node_bandwidth_usage.append(node["bandwidth_usage"] / 1000000.0) # Convert to MB
+            # self.node_bandwidth.append(self.node_bandiwidth_map[node_name])
             self.node_layer.append(self.layer_discrete_map[self.node_layer_map[node_name]])
             self.node_cpu_type.append(self.node_cpu_type_map[node_name])
 
@@ -151,7 +150,7 @@ class TestBedEnv(gym.Env):
                 self.pod_cpu_requests.append(0)
                 self.pod_memory_requests.append(0)
                 self.pod_is_scheduled.append(False)      
-                self.pod_name.append(service_name)
+                self.pod_name.append(service_name + "_dummy")
                 self.pod_is_client.append(False)
 
         # 构建 observation space
@@ -165,18 +164,29 @@ class TestBedEnv(gym.Env):
             # "Node_cpu_type": np.array(self.node_cpu_type, dtype=np.int32),
             "Pod_node_id": np.array(self.pod_node_ids, dtype=np.int32),
             # "Layer_latency": np.array([self.layer_latency], dtype=np.float32),
-            "Pod_cpu_requests": np.array(self.pod_cpu_requests, dtype=np.float32),
-            "Pod_memory_requests": np.array(self.pod_memory_requests, dtype=np.float32)
+            # "Pod_cpu_requests": np.array(self.pod_cpu_requests, dtype=np.float32),
+            # "Pod_memory_requests": np.array(self.pod_memory_requests, dtype=np.float32)
         }
-
-        # 返回初始 observation
         return observation 
     def get_action(self, action: int)->tuple[int, int]:
+        if action == self.stopped_action:
+            raise Exception("Stop action")
         num_pods = self.num_pods
         node_id = action // num_pods
         pod_id = action % num_pods
-        return self.node_name_order[node_id],self.pod_name[pod_id] 
+        return self.node_name_order[node_id],self.pod_name[pod_id]
 
+    def check_valid_action(self, action)->bool:
+        node_name, pod_name = self.get_action(action)
+        node_id = action // self.num_pods
+        pod_id = action % self.num_pods
+        if not self.pod_is_scheduled[pod_id] or \
+            self.pod_node_ids[pod_id] == node_id or \
+            self.node_is_client[node_id] or \
+            self.pod_is_client[pod_id] or \
+            node_name not in self.PodDeployable[pod_name]:
+            return False
+        return True
     def action_masks(self)->List[bool]:
         """
         Returns an action mask to filter out invalid actions.
