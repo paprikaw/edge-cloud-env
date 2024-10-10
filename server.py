@@ -11,23 +11,25 @@ app = Flask(__name__)
 env = TestBedEnv(7, 13, 50)
 # simuEnv = MicroserviceMaskEnv(is_training=False, num_nodes=7, num_pods=13)
 # simuEnv.reset()
-model = MaskablePPO.load("./models/old_mimic-partial-obs-step-1.25-state-least-final/best_model.zip", env=env)
+# model = MaskablePPO.load("./models/ppo-state-least-final/PPO_1/best_model.zip", env=env)
+model = DQN.load("./models/dqn-least-state-verified/best_model.zip", env=env)
 # model = DQN.load("./models/dqn-least-state/best_model", env=env)
 logger = app.logger
 # 创建日志处理器
 handler = logging.StreamHandler()
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 # 设置日志格式，包括文件名和行号
 formatter = logging.Formatter(
     '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+
 # 将格式应用到处理器上
 handler.setFormatter(formatter)
 # 将处理器添加到 Flask 的 logger 中
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)  # 设置日志级别
-isDQN = False
+isDQN = True
 # 定义一个 POST 端点，用于接收客户端发送的 JSON 数据
 @app.route('/get_action', methods=['POST'])
 def get_action():
@@ -55,7 +57,6 @@ def get_action():
     elif not env.check_valid_action(action):
         logger.info(f"action: invalid action")
     if not int(action) == env.stopped_action:
-        logger.info("pod names" + str(env.pod_name))
         node, pod = env.get_action(action)
         logger.info(f"action: target node: {node}, target pod: {pod}")
 
@@ -73,5 +74,4 @@ def get_action():
 
 if __name__ == '__main__':
     # 启动 Flask 服务器，监听 5000 端口
-    logger.info("server start")
     app.run(host='0.0.0.0', port=5000)
