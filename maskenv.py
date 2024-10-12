@@ -17,15 +17,17 @@ class MicroserviceMaskEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty = 0):
+    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty = 0, pattern="aggregator"):
         super(MicroserviceMaskEnv, self).__init__()
         logger.info(f"step_panelty: {step_panelty}")
         self.step_panelty = step_panelty
         self.microservices_config_path = './config/services.json'
-        self.calls_config_path = './config/call_patterns.json'
-        self.node_config_path = './config/nodes.json'
+        self.calls_config_path = f'./config/{pattern}_call_patterns.json'
         if not dynamic_env:
             self.node_config_path = './config/nodes-simple.json'
+        else:
+            self.node_config_path = './config/nodes.json'
+
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
         self.is_testing = is_testing
@@ -84,7 +86,8 @@ class MicroserviceMaskEnv(gym.Env):
         self.endpoints = self.app.get_endpoints()
         logger.warning("---------------- Episode Resetted ----------------")
         logger.warning(f"cloud latency: {self.simulator.get_latency_between_layers('client', 'cloud')}")
-        return self._get_state(), {}
+        state = self._get_state()
+        return state, {}
  
     def _get_state(self):
         """根据当前环境状态，构建状态空间"""
@@ -105,7 +108,6 @@ class MicroserviceMaskEnv(gym.Env):
             "edge": 1,
             "client": 2,
         }
-
         # 构建节点的状态
         nodes_state = {
             # "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
@@ -128,7 +130,6 @@ class MicroserviceMaskEnv(gym.Env):
             #                           self.simulator.get_latency_between_layers("cloud", "client"),
             #                           self.simulator.get_latency_between_layers("cloud", "edge")], dtype=np.float32),
         }
-
         # 构建微服务实例的状态
         ms_state = {
             # "Pod_id": np.array(self.pod_ids, dtype=np.int32),
@@ -145,7 +146,6 @@ class MicroserviceMaskEnv(gym.Env):
             # "time_step": np.array([self.episode_steps], dtype=np.int32)
         }
         logger.info(f"state: {state}")
-        # print(state)
         return state
 
     def set_cloud_latency(self, latency):

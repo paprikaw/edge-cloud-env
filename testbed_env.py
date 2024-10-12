@@ -57,23 +57,23 @@ class TestBedEnv(gym.Env):
             "client": 700,
             "aggregator": 700,
             "detection": 1000,
-            "machine-learning": 2000,
-            "db": 700,
+            "machine-learning": 1500,
+            "db": 500,
         }
 
         self.pod_cpu_map = {
-            "client": 0.7,
+            "client": 0.5,
             "aggregator": 1,
             "detection": 0.7, 
-            "machine-learning": 2,
-            "db": 0.7,
+            "machine-learning": 1.5,
+            "db": 0.5,
         }
         self.service_replica_cnt = {
             "client": 1,
-            "aggregator": 3,
-            "detection": 3, 
-            "machine-learning": 3,
-            "db": 3,
+            "aggregator": 5,
+            "detection": 5, 
+            "machine-learning": 5,
+            "db": 5,
         }
         self.observation_space = spaces.Dict({
             # "Node_id": spaces.Box(low=0, high=num_nodes, shape=(num_nodes,), dtype=np.int32),

@@ -39,8 +39,8 @@
             "tb-cloud-vm-8": {
                 "count": 2,
                 "cpu_availability": [
-                    "5",
-                    "5"
+                    "7",
+                    "7"
                 ],
                 "memory_availability": [
                     "27.68G",

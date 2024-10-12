@@ -14,15 +14,23 @@ from custom_callbacks import LatencyCallback
 from dotenv import load_dotenv
 import os
 import logging
+import signal
 load_dotenv(override=True)
 logging.basicConfig(level=logging.ERROR)
 step_panelty = 1.25
-cpu_num = 4
-total_timesteps = 10000000
-name = f"a2c-state-least"
+cpu_num = 8
+total_timesteps = 5000000
+name = f"ppo-leaststate-morepods-chain"
+num_pods = 21
+num_nodes = 7
+pattern = "chain"
+def handle_terminate_signal(signum, frame):
+    print("Terminate signal received. Saving the model.")
+    model.save(f"./models/{name}/model")
+    exit(0)
 
 def createEnv():
-    env = MicroserviceMaskEnv(num_nodes=7, num_pods=13, dynamic_env=True, is_testing=False, step_panelty=step_panelty)
+    env = MicroserviceMaskEnv(num_nodes=num_nodes, num_pods=num_pods, dynamic_env=True, is_testing=False, step_panelty=step_panelty, pattern=pattern)
     env = Monitor(env)
     return env
 
@@ -44,6 +52,7 @@ if __name__ == "__main__":
     print(f"step_panelty: {step_panelty}")
     print(f"name: {name}")
     print(f"total_timesteps: {total_timesteps}")
+    signal.signal(signal.SIGTERM, handle_terminate_signal)
     if cpu_num == 0:
         env = createEnv()
     else:
@@ -58,15 +67,11 @@ if __name__ == "__main__":
         render=False,
         n_eval_episodes=50
     )
-    latency_callback = LatencyCallback(repeat_target=10, num_nodes=7, num_pods=13)
-
-    model = A2C("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
+    latency_callback = LatencyCallback(repeat_target=10, num_nodes=num_nodes, num_pods=num_pods, pattern=pattern)
+    global model
+    model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # model = MaskablePPO("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # 训练代理
-    try:
-        model.learn(total_timesteps=total_timesteps,callback=[eval_callback, latency_callback])
-        # 保存模型
-        model.save(f"./models/{name}/model")
-    except KeyboardInterrupt:
-        print("Training interrupted. Saving the model.")
-        model.save(f"./models/{name}/model")
+    model.learn(total_timesteps=total_timesteps,callback=[eval_callback, latency_callback])
+    # 保存模型
+    model.save(f"./models/{name}/model")

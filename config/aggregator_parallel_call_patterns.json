@@ -1,0 +1,54 @@
+{
+    "detection": {
+        "client": "client",
+        "call-path": [
+            {
+                "aggregator": {
+                    "data-size": "0.1M",
+                    "execution-time": {
+                        "0": "7ms",
+                        "1": "10.5ms",
+                        "2": "14ms"
+                    },
+                    "call-path": [
+                        {
+                            "machine-learning": {
+                                "data-size": "0.1M",
+                                "execution-time": {
+                                    "0": "46ms",
+                                    "1": "69ms",
+                                    "2": "92ms"
+                                },
+                                "call-path": []
+                            }
+                        },
+                        {
+                            "db": {
+                                "data-size": "0.1M",
+                                "execution-time": {
+                                    "0": "2.1ms",
+                                    "1": "3.15ms",
+                                    "2": "4.2ms"
+                                },
+                                "call-path": []
+                            }
+                        },
+                        {
+                            "detection": {
+                                "data-size": "0.1M",
+                                "execution-time": {
+                                    "0": "12.5ms",
+                                    "1": "18.75ms",
+                                    "2": "25ms"
+                                },
+                                "call-path": []
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "rps": 5,
+        "qos": "100ms"
+    }
+}
