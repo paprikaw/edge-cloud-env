@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 import os
 
 # version = f"v15/mask-ppo/dynamicenv-200-relative-400-acc-0.5"
-version =f"old_mimic-partial-obs-step-1.25-state-less-final"
+version =f"ppo-21pods-aggregator_sequential-complete"
 logging.basicConfig(level=logging.INFO)
-env = MicroserviceMaskEnv(is_testing=True, num_nodes=7, num_pods=13, dynamic_env=False, step_panelty=1.25)
+env = MicroserviceMaskEnv(is_testing=True, num_nodes=7, num_pods=21, dynamic_env=False, step_panelty=1.25, replica_cnt=1, pattern="aggregator_sequential")
 model = MaskablePPO.load(f"./models/{version}/best_model", env=env)
 obs, info = env.reset()
 done = False

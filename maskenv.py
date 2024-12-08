@@ -17,7 +17,7 @@ class MicroserviceMaskEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty = 0, pattern="aggregator"):
+    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty = 0, pattern="aggregator_parallel", replica_cnt=-1):
         super(MicroserviceMaskEnv, self).__init__()
         logger.info(f"step_panelty: {step_panelty}")
         self.step_panelty = step_panelty
@@ -27,7 +27,7 @@ class MicroserviceMaskEnv(gym.Env):
             self.node_config_path = './config/nodes-simple.json'
         else:
             self.node_config_path = './config/nodes.json'
-
+        self.replica_cnt = replica_cnt
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称
         self.is_testing = is_testing
@@ -78,7 +78,7 @@ class MicroserviceMaskEnv(gym.Env):
         self.cloud_latency = random.uniform(50, 50)
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
-        self._init_valid_simulator()
+        self._init_valid_simulator(self.replica_cnt)
         if self.is_testing and self.episode == 0:
             self.simulator.output_simulator_status_to_file("./logs/test_start.json")
         self.app = self.simulator.get_app(self.app_name)
@@ -287,13 +287,13 @@ class MicroserviceMaskEnv(gym.Env):
             logger.debug(f"Node ID: {node_id}, Bandwidth Usage: {node.bandwidth_usage}")
         return True
 
-    def _init_valid_simulator(self):
+    def _init_valid_simulator(self, replica_cnt=-1):
         '''
         初始化模拟器，重复尝试10次
         在一些情况下，可能microservice无法在既有资源下完成部署
         '''
         for i in range(100):
-            self.simulator = MicroserviceSimulator(self.microservices_config_path, self.calls_config_path, self.node_config_path, self.cloud_latency)
+            self.simulator = MicroserviceSimulator(self.microservices_config_path, self.calls_config_path, self.node_config_path, self.cloud_latency, replica_cnt)
             if self._init_simulator(self.simulator, self.app_name):
                 return
         assert(False)

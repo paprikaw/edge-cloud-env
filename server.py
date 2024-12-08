@@ -7,18 +7,33 @@ import json
 import os
 from datetime import datetime
 import logging
+import argparse
 app = Flask(__name__)
 env = TestBedEnv(7, 21, 50)
 # simuEnv = MicroserviceMaskEnv(is_training=False, num_nodes=7, num_pods=13)
 # simuEnv.reset()
-name = f"ppo-leaststate-morepods-aggregator-parallel"
-model = MaskablePPO.load(f"./models/{name}/best_model", env=env)
-# model = DQN.load("./models/dqn-least-state-verified/best_model.zip", env=env)
+
+parser = argparse.ArgumentParser(description='Process some arguments.')
+parser.add_argument('--modelname', type=str, help='Name of the model')
+parser.add_argument('--pattern', type=str, help='Pattern to use')
+parser.add_argument('--tag', type=str, help='Tag to use')
+
+args = parser.parse_args()
+modelname = args.modelname
+pattern = args.pattern
+tag = args.tag
+name = f"{modelname}-21pods-{pattern}-{tag}"
+# name = f"ppo-leaststate-morepods-chain"
+if modelname == "ppo":
+    model = MaskablePPO.load(f"./models/{name}/best_model", env=env)
+elif modelname == "dqn":
+    model = DQN.load(f"./models/{name}/best_model", env=env)
+else:
+    raise ValueError(f"Invalid modelname: {modelname}")
 # model = DQN.load("./models/dqn-least-state/best_model", env=env)
 logger = app.logger
 # 创建日志处理器
 handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
 # 设置日志格式，包括文件名和行号
 formatter = logging.Formatter(
     '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',
@@ -30,7 +45,7 @@ handler.setFormatter(formatter)
 # 将处理器添加到 Flask 的 logger 中
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)  # 设置日志级别
-isDQN = False
+isDQN = modelname == "dqn"
 # 定义一个 POST 端点，用于接收客户端发送的 JSON 数据
 @app.route('/get_action', methods=['POST'])
 def get_action():
@@ -74,5 +89,6 @@ def get_action():
     return jsonify({"status": "error", "message": str(e)}), 400
 
 if __name__ == '__main__':
+    logger.info(f"Starting server with model: {modelname}, pattern: {pattern}")
     # 启动 Flask 服务器，监听 5000 端口
     app.run(host='0.0.0.0', port=5000)

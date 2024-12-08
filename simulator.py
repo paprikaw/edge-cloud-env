@@ -15,7 +15,7 @@ from endpoint import Endpoint
 logger = logging.getLogger(__name__)
 
 class MicroserviceSimulator:
-    def __init__(self, service_config_path = None, call_config_path = None, node_config_path = None, cloud_latency = None):
+    def __init__(self, service_config_path = None, call_config_path = None, node_config_path = None, cloud_latency = None, replica_cnt = -1):
         if service_config_path is None or call_config_path is None or node_config_path is None:
             raise Exception("Please provide the config path")
 
@@ -27,7 +27,7 @@ class MicroserviceSimulator:
         self.layers: List[str] = ["cloud", "edge", "client"]    
         self._init_nodes(node_config_path)  # 初始化节点信息
         self.cloud_latency = cloud_latency
-
+        self.replica_cnt = replica_cnt
 
         self.apps: Dict[str, Application] = {} # Dict[app_name, Application]
         self.load_app(service_config_path, call_config_path, "iot-ms-app")
@@ -114,7 +114,7 @@ class MicroserviceSimulator:
         """加载微服务应用配置"""
         if app_name in self.apps:
             raise Exception(f"Microservice {app_name} already exists")
-        self.apps[app_name] = Application(ms_config_path, calls_config_path, app_name)
+        self.apps[app_name] = Application(ms_config_path, calls_config_path, app_name, self.replica_cnt)
 
     def deploy_app(self, app_name: str) -> bool:
         """Deploy pods of an application to the cluster"""

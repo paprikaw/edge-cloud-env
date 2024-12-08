@@ -119,7 +119,7 @@ class TestBedEnv(gym.Env):
         self.node_is_client = []
         for i, node_name in enumerate(self.node_name_order):
             self.node_is_client.append(self.node_layer_map[node_name] == "client")
-            self.node_name_id_map[node_name] = i
+            self.node_name_id_map[node_name] = i+1
             node = self.ClusterState["nodes"][node_name]
             self.node_cpu_availability.append(node["cpu_availability"] / 1000.0)
             self.node_memory_availability.append(node["memory_availability"])
@@ -181,7 +181,7 @@ class TestBedEnv(gym.Env):
         node_id = action // self.num_pods
         pod_id = action % self.num_pods
         if not self.pod_is_scheduled[pod_id] or \
-            self.pod_node_ids[pod_id] == node_id or \
+            self.pod_node_ids[pod_id] == node_id + 1 or \
             self.node_is_client[node_id] or \
             self.pod_is_client[pod_id] or \
             node_name not in self.PodDeployable[pod_name]:
@@ -203,7 +203,7 @@ class TestBedEnv(gym.Env):
 
                 mask_flag = False
                 if not self.pod_is_scheduled[j] or \
-                    self.pod_node_ids[j] == i or \
+                    self.pod_node_ids[j] == i+1 or \
                     self.node_is_client[i] or \
                     self.pod_is_client[j] or \
                     node_name not in self.PodDeployable[pod_name]:

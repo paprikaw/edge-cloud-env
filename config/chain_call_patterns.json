@@ -12,21 +12,21 @@
                     },
                     "call-path": [
                         {
-                            "machine-learning": {
+                            "detection": {
                                 "data-size": "0.1M",
                                 "execution-time": {
-                                    "0": "46ms",
-                                    "1": "69ms",
-                                    "2": "92ms"
+                                    "0": "12.5ms",
+                                    "1": "18.75ms",
+                                    "2": "25ms"
                                 },
                                 "call-path": [
                                     {
-                                        "detection": {
+                                        "machine-learning": {
                                             "data-size": "0.1M",
                                             "execution-time": {
-                                                "0": "12.5ms",
-                                                "1": "18.75ms",
-                                                "2": "25ms"
+                                                "0": "46ms",
+                                                "1": "69ms",
+                                                "2": "92ms"
                                             },
                                             "call-path": [
                                                 {

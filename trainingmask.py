@@ -1,4 +1,5 @@
 from stable_baselines3.common.callbacks import EvalCallback
+import argparse
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.policies import BasePolicy
@@ -19,11 +20,21 @@ load_dotenv(override=True)
 logging.basicConfig(level=logging.ERROR)
 step_panelty = 1.25
 cpu_num = 8
-total_timesteps = 5000000
-name = f"ppo-leaststate-morepods-chain"
 num_pods = 21
 num_nodes = 7
-pattern = "chain"
+
+
+parser = argparse.ArgumentParser(description='Process some arguments.')
+parser.add_argument('--total_timesteps', type=int, default=5000000, help='Total timesteps for training')
+parser.add_argument('--tag', type=str, default='complete-training', help='Tag for the training session')
+parser.add_argument('--pattern', type=str, default='aggregator_sequential', help='Pattern to use')
+
+args = parser.parse_args()
+total_timesteps = args.total_timesteps
+tag = args.tag
+pattern = args.pattern
+
+name = f"ppo-21pods-{pattern}-{tag}"
 def handle_terminate_signal(signum, frame):
     print("Terminate signal received. Saving the model.")
     model.save(f"./models/{name}/model")

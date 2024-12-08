@@ -6,12 +6,21 @@ from stable_baselines3 import A2C
 from env import MicroserviceEnv
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from custom_callbacks import NoMaskLatencyCallback
+import argparse
 import logging
 logging.basicConfig(level=logging.ERROR)
-version = "dqn-leaststate-morepods-aggregator-parallel"
-pattern = "aggregator_parallel"
-# version = "v11-no-mask-dynamic-ppo"
-# version = "v11-no-mask-dynamic-a2c"
+
+parser = argparse.ArgumentParser(description='Process some arguments.')
+parser.add_argument('--total_timesteps', type=int, default=5000000, help='Total timesteps for training')
+parser.add_argument('--tag', type=str, default='complete-training', help='Tag for the training session')
+parser.add_argument('--pattern', type=str, default='aggregator_sequential', help='Pattern to use')
+
+args = parser.parse_args()
+total_timesteps = args.total_timesteps
+tag = args.tag
+pattern = args.pattern
+name = f"dqn-21pods-{pattern}-{tag}"
+
 num_nodes = 7
 num_pods = 21
 num_cpu = 8
@@ -35,24 +44,26 @@ def make_env():
 
 if __name__ == "__main__":
     # env = SubprocVecEnv([make_env() for i in range(8)])
+    print(f"name: {name}")
+    print(f"total_timesteps: {total_timesteps}")
     env = createEnv()
     latency_callback = NoMaskLatencyCallback(repeat_target=20, num_nodes=num_nodes, num_pods=num_pods, pattern=pattern)
     eval_callback = EvalCallback(
         env,                       
-        best_model_save_path='./models/' + version,
+        best_model_save_path='./models/' + name,
         log_path='./logs/results/',       
         eval_freq=10000,
         deterministic=True,
         render=False,
         n_eval_episodes=20,
     )
-    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{version}")
+    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
     # model = A2C("MultiInputPolicy", env, verbose=1)
     # 训练代理
     try:
-        model.learn(total_timesteps=5000000,callback=[eval_callback, latency_callback])
+        model.learn(total_timesteps=total_timesteps,callback=[eval_callback, latency_callback])
         # 保存模型
-        model.save(f"./models/{version}/model")
+        model.save(f"./models/{name}/model")
     except KeyboardInterrupt:
         print("Training interrupted. Saving the model.")
-        model.save(f"./models/{version}/model")
+        model.save(f"./models/{name}/model")

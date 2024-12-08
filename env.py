@@ -16,7 +16,7 @@ class MicroserviceEnv(gym.Env):
     RL agent migrates microservices in the application
     RL agent only makes decisions after all microservices are deployed
     """
-    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty=2, end_panelty=2, pattern="aggregator"):
+    def __init__(self, is_testing=False, dynamic_env=True, num_nodes=0, num_pods=0, step_panelty=2, end_panelty=2, pattern=""):
         super(MicroserviceEnv, self).__init__()
         self.step_panelty = step_panelty
         self.end_panelty = end_panelty

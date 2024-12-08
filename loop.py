@@ -13,7 +13,6 @@ def run_test(index):
         print(f"Detection found in run #{index}")
     else:
         print(f"No detection found in run #{index}")
-    
     print("------------------------")
 
 # 创建线程列表

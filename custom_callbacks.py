@@ -65,7 +65,7 @@ class LatencyCallback(BaseCallback):
         return True
 
 class NoMaskLatencyCallback(BaseCallback):
-    def __init__(self, verbose=0, repeat_target=10, num_nodes=7, num_pods=13, pattern="aggregator"):
+    def __init__(self, verbose=0, repeat_target=10, num_nodes=7, num_pods=13, pattern=""):
         super().__init__(verbose)
         self.repeat_target = repeat_target
         self.num_nodes = num_nodes

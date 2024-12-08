@@ -9,7 +9,7 @@ import logging
 from service import Service
 logger = logging.getLogger(__name__)
 class Application:
-    def __init__(self, microservices_config_path: str, calls_config_path: str, app_name: str):
+    def __init__(self, microservices_config_path: str, calls_config_path: str, app_name: str, replica_cnt: int):
         self.incre_id = 0
         self.pods: Dict[int, Pod] = {}
         self.bandwidth_adj_list = {} # 存储不同instance之间所产生的带宽。
@@ -18,13 +18,13 @@ class Application:
         # self.replica_sets = {} # key为ms_name，value为instance_name的列表
         self.endpoints: Endpoint = {} # 存储所有的endpoints
         self.services: Dict[str, Service] = {} # 存储所有的服务
+        self.replica_cnt = replica_cnt
         # ms app有三种状态:
         # Undeployed: 所有ms都没有被部署
         # Ongoing: 部分ms被部署
         # Deployed: 所有ms都被部署
         self.deployedInstanceCnt = 0
         self.deployState = "Undeployed" 
-
         # 加载配置文件
         self.microservices_config = self._load_json(microservices_config_path)
         self.calls_config = self._load_json(calls_config_path)
@@ -46,7 +46,10 @@ class Application:
         for service_name, service_meta_data in self.microservices_config.items():
             service_order_list.append(service_name)
             max_replicas = service_meta_data["max-replica"]
-            num_replicas = random.randint(1, max_replicas)
+            if self.replica_cnt != -1:
+                num_replicas = self.replica_cnt
+            else:
+                num_replicas = random.choice([1, 3, 5])
             new_service = Service(service_name, max_replicas, num_replicas)
             for i in range(num_replicas):
                 pod_name = f"{service_name}-{i+1}"
