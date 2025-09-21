@@ -89,7 +89,7 @@ class TestBedEnv(gym.Env):
             # "Pod_cpu_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32),
             # "Pod_memory_requests": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.float32)
         })
-        with open('node_name_order.json', 'r') as f:
+        with open('node_name_order_old.json', 'r') as f:
             self.node_name_order = json.load(f)
         with open('service_order.json', 'r') as f:
             self.service_name_order = json.load(f)

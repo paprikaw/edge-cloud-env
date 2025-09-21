@@ -49,7 +49,7 @@ class Application:
             if self.replica_cnt != -1:
                 num_replicas = self.replica_cnt
             else:
-                num_replicas = random.choice([1, 3, 5])
+                num_replicas = random.randint(1, max_replicas)
             new_service = Service(service_name, max_replicas, num_replicas)
             for i in range(num_replicas):
                 pod_name = f"{service_name}-{i+1}"

@@ -20,11 +20,11 @@ class MicroserviceEnv(gym.Env):
         super(MicroserviceEnv, self).__init__()
         self.step_panelty = step_panelty
         self.end_panelty = end_panelty
-        self.microservices_config_path = './config/services.json'
+        self.microservices_config_path = f'./config/{num_nodes}-{num_pods}/services.json'
         self.calls_config_path = f'./config/{pattern}_call_patterns.json'
-        self.node_config_path = './config/nodes.json'
+        self.node_config_path = f'./config/{num_nodes}-{num_pods}/nodes.json'
         if not dynamic_env:
-            self.node_config_path = './config/nodes-simple.json'
+            self.node_config_path = f'./config/{num_nodes}-{num_pods}/nodes-simple.json'
 
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称

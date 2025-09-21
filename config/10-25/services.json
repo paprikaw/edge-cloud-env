@@ -1,0 +1,33 @@
+{
+    "client": {
+        "cpu-requests": "700m",
+        "memory-requests": "700M",
+        "max-replica": 1,
+        "type": "service",
+        "layer": "client"
+    },
+    "aggregator": {
+        "cpu-requests": "700m",
+        "memory-requests": "700M",
+        "max-replica": 6,
+        "type": "service"
+    },
+    "detection": {
+        "cpu-requests": "1000m",
+        "memory-requests": "1000M",
+        "max-replica": 6,
+        "type": "service"
+    },
+    "db": {
+        "cpu-requests": "500m",
+        "memory-requests": "500M",
+        "max-replica": 6,
+        "type": "service"
+    },
+    "machine-learning": {
+        "cpu-requests": "1500m",
+        "memory-requests": "1500M",
+        "max-replica": 6,
+        "type": "service"
+    }
+}

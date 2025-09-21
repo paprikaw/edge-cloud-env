@@ -12,6 +12,8 @@ class LatencyCallback(BaseCallback):
         return True
 
     def _on_rollout_end(self) -> bool:
+        print(self.num_pods)
+        print(self.num_nodes)
         static_env = MicroserviceMaskEnv(is_testing=False, 
                                   num_nodes=self.num_nodes, 
                                   num_pods=self.num_pods, 
@@ -40,7 +42,6 @@ class LatencyCallback(BaseCallback):
             while not done_static:
                 action_masks = static_env.action_masks()
                 action, _states = self.model.predict(obs_static, deterministic=True, action_masks=action_masks)
-                print()
                 obs_static, reward_static, done_static, _, info_static = static_env.step(action)
                 static_env.render()
                 step_static += 1

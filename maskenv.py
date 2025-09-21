@@ -21,12 +21,12 @@ class MicroserviceMaskEnv(gym.Env):
         super(MicroserviceMaskEnv, self).__init__()
         logger.info(f"step_panelty: {step_panelty}")
         self.step_panelty = step_panelty
-        self.microservices_config_path = './config/services.json'
+        self.microservices_config_path = f'./config/{num_nodes}-{num_pods}/services.json'
         self.calls_config_path = f'./config/{pattern}_call_patterns.json'
         if not dynamic_env:
-            self.node_config_path = './config/nodes-simple.json'
+            self.node_config_path = f'./config/{num_nodes}-{num_pods}/nodes-simple.json'
         else:
-            self.node_config_path = './config/nodes.json'
+            self.node_config_path = f'./config/{num_nodes}-{num_pods}/nodes.json'
         self.replica_cnt = replica_cnt
         self.current_ms = None  # 当前待调度的微服务实例
         self.app_name = "iot-ms-app"  # 当前微服务应用的名称

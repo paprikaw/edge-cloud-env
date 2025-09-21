@@ -1,33 +1,43 @@
 {
     "node_type": {
-        "cloud-node": {
-            "cpu_type": "a",
+        "tb-cloud-vm-8": {
+            "cpu_type": 0,
+            "bandwidth": "500m"
         },
-        "edge-node": {
-            "cpu_type": "b",
+        "tb-edge-vm-4": {
+            "cpu_type": 1,
+            "bandwidth": "200m"
         },
+        "tb-edge-vm-2": {
+            "cpu_type": 2,
+            "bandwidth": "200m"
+        },
+        "tb-client-vm-2": {
+            "cpu_type": 1,
+            "bandwidth": "200m"
+        }
     },
     "latency": {
         "edge": {
             "cloud": ["50ms", "500ms"],
-            "user": ["0.1ms", "0.1ms"],
+            "client": ["0.1ms", "0.1ms"],
             "edge": ["0.1ms", "0.1ms"]
         },
         "client": {
             "cloud": ["50ms", "500ms"],
-            "user": ["0.1ms", "0.1ms"],
+            "client": ["0.1ms", "0.1ms"],
             "edge": ["0.1ms", "0.1ms"]
         },
         "cloud": {
             "cloud": ["0.1ms", "0.1ms"],
-            "user": ["50ms", "500ms"],
+            "client": ["50ms", "500ms"],
             "edge": ["50ms", "500ms"]
         }
     },
     "cluster_setup": {
         "cloud": {
             "tb-cloud-vm-8": {
-                "count": 2,
+                "count": 4,
                 "cpu_availability": [
                     "2",
                     "5",
@@ -38,11 +48,15 @@
                     "16G",
                     "27.68G"
                 ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0"
+                ]
             }
         },
         "edge": {
             "tb-edge-vm-2": {
-                "count": 2,
+                "count": 4,
                 "cpu_availability": [
                     "1",
                     "2"
@@ -52,9 +66,13 @@
                     "4.3G",
                     "7.65G"
                 ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0"
+                ]
             },
             "tb-edge-vm-4": {
-                "count": 2,
+                "count": 4,
                 "cpu_availability": [
                     "2",
                     "4"
@@ -64,10 +82,14 @@
                     "8G",
                     "14G"
                 ],
+                "bandwidth_utilization": [
+                    "0",
+                    "0"
+                ]
             }
         },
         "client": {
-            "client-vm-2": {
+            "tb-client-vm-2": {
                 "count": 1,
                 "cpu_availability": [
                     "2"

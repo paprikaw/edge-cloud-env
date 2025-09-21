@@ -1,1 +1,1 @@
-python server.py --modelname ppo --pattern chain --tag complete
+python server.py --modelname ppo --pattern aggregator_parallel --tag complete3

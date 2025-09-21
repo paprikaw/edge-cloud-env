@@ -22,7 +22,7 @@ args = parser.parse_args()
 modelname = args.modelname
 pattern = args.pattern
 tag = args.tag
-name = f"{modelname}-21pods-{pattern}-{tag}"
+name = f"{modelname}-21pods-7nodes-{pattern}-{tag}"
 # name = f"ppo-leaststate-morepods-chain"
 if modelname == "ppo":
     model = MaskablePPO.load(f"./models/{name}/best_model", env=env)

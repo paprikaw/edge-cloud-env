@@ -1,9 +1,21 @@
 [
     "tb-cloud-vm-8-1",
     "tb-cloud-vm-8-2",
+    "tb-cloud-vm-8-3",
+    "tb-cloud-vm-8-4",
+    "tb-cloud-vm-8-5",
+    "tb-cloud-vm-8-6",
     "tb-edge-vm-2-1",
     "tb-edge-vm-2-2",
+    "tb-edge-vm-2-3",
+    "tb-edge-vm-2-4",
+    "tb-edge-vm-2-5",
+    "tb-edge-vm-2-6",
     "tb-edge-vm-4-1",
     "tb-edge-vm-4-2",
+    "tb-edge-vm-4-3",
+    "tb-edge-vm-4-4",
+    "tb-edge-vm-4-5",
+    "tb-edge-vm-4-6",
     "tb-client-vm-2-1"
 ]
