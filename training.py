@@ -6,6 +6,7 @@ from stable_baselines3 import A2C
 from env import MicroserviceEnv
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from custom_callbacks import NoMaskLatencyCallback
+import torch
 from stable_baselines3.common.callbacks import StopTrainingOnNoModelImprovement
 import argparse
 import logging
@@ -18,6 +19,7 @@ parser.add_argument('--tag', type=str, default='complete-training', help='Tag fo
 parser.add_argument('--pattern', type=str, default='aggregator_sequential', help='Pattern to use')
 parser.add_argument('--nodes', type=str, default='22', help='Number of nodes')
 parser.add_argument('--pods', type=str, default='41', help='Number of pods')
+parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu', choices=['cpu', 'cuda'], help='Device to use for training')
 
 
 args = parser.parse_args()
@@ -29,6 +31,7 @@ num_nodes = int(args.nodes)
 num_pods = int(args.pods)
 num_cpu = 8
 name = f"dqn-{num_pods}pods-{num_nodes}nodes-{pattern}-{tag}"
+device = args.device
 def createEnv():
     env = MicroserviceEnv(num_nodes=num_nodes, num_pods=num_pods, dynamic_env=True, step_panelty=2, end_panelty=2, pattern=pattern)
     env = Monitor(env)
@@ -51,6 +54,15 @@ if __name__ == "__main__":
     # env = SubprocVecEnv([make_env() for i in range(8)])
     print(f"name: {name}")
     print(f"total_timesteps: {total_timesteps}")
+    print(f"device: {device} (cuda_available={torch.cuda.is_available()})")
+    try:
+        torch.set_float32_matmul_precision("high")
+    except Exception:
+        pass
+    try:
+        torch.backends.cudnn.benchmark = True
+    except Exception:
+        pass
     env = createEnv()
     latency_callback = NoMaskLatencyCallback(repeat_target=20, num_nodes=num_nodes, num_pods=num_pods, pattern=pattern)
     # stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=10, min_evals=5, verbose=1)
@@ -64,7 +76,7 @@ if __name__ == "__main__":
         n_eval_episodes=50,
         # callback_after_eval=stop_train_callback
     )
-    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}")
+    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log=f"./logs/ppo-mask-tensorboard/{name}", device=device)
     # model = A2C("MultiInputPolicy", env, verbose=1)
     # 训练代理
     start_time = time.time()

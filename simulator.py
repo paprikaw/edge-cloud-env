@@ -32,6 +32,24 @@ class MicroserviceSimulator:
         self.apps: Dict[str, Application] = {} # Dict[app_name, Application]
         self.load_app(service_config_path, call_config_path, "iot-ms-app")
 
+    def _sample_from_config(self, values, parse_fn):
+        """支持两种模式：
+        - 区间采样：当列表长度为2时，按[min, max]进行uniform采样
+        - 离散采样：其他情况，随机选择其一
+        """
+        try:
+            if isinstance(values, list) and len(values) == 2:
+                min_v = parse_fn(values[0])
+                max_v = parse_fn(values[1])
+                # 处理可能反序的端点
+                low, high = (min_v, max_v) if min_v <= max_v else (max_v, min_v)
+                return random.uniform(low, high)
+            # 离散取样
+            return parse_fn(random.choice(values))
+        except Exception:
+            # 兜底：按离散处理（与旧逻辑一致）
+            return parse_fn(random.choice(values))
+
     def _load_profiling_data(self, path):
         with open(path, 'r') as json_file:
             return json.load(json_file)
@@ -47,13 +65,22 @@ class MicroserviceSimulator:
                 self.latency_between_layer.setdefault(layer, {})[target_layer] = latency
 
     def get_latency_between_layers(self, layer: str, target_layer: str) -> float:
-        """获取两个层级之间的延迟"""
+        """获取两个层级之间的延迟
+        优先使用 nodes.json 初始化的 self.latency_between_layer；
+        若缺失则回退到 self.cloud_latency 或 1.0。
+        """
         if layer == target_layer:
             return 1.0
-        if target_layer == "cloud":
-            return self.cloud_latency
-        if layer == "cloud":
-            return self.cloud_latency
+
+        # Prefer config-driven latency if available
+        if layer in self.latency_between_layer and \
+           target_layer in self.latency_between_layer[layer]:
+            return self.latency_between_layer[layer][target_layer]
+
+        # Fallbacks for missing config
+        if layer == "cloud" or target_layer == "cloud":
+            if self.cloud_latency is not None:
+                return self.cloud_latency
         return 1.0
 
     def _init_nodes(self, node_config_path):
@@ -64,10 +91,11 @@ class MicroserviceSimulator:
             for node_type, config in node_types.items():
                 node_count = config["count"]
                 for i in range(node_count):
-                    cpu_availability = myparser.parse_cpu_requests(random.choice(config["cpu_availability"]))
-                    memory_availability = myparser.parse_memory(random.choice(config["memory_availability"]))
+                    cpu_availability = self._sample_from_config(config["cpu_availability"], myparser.parse_cpu_requests)
+                    memory_availability = self._sample_from_config(config["memory_availability"], myparser.parse_memory)
                     bandwidth = myparser.parse_bandwidth(nodes_config["node_type"][node_type]["bandwidth"])
-                    bandwidth_usage = myparser.parse_percentage(random.choice(config["bandwidth_utilization"])) * float(bandwidth)
+                    bandwidth_util = self._sample_from_config(config["bandwidth_utilization"], myparser.parse_percentage)
+                    bandwidth_usage = bandwidth_util * float(bandwidth)
                     cpu_type = nodes_config["node_type"][node_type]["cpu_type"]
                     node_name = f"{node_type}-{i+1}"
                     node_id = self.node_incre_id

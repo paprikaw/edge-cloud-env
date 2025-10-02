@@ -39,12 +39,14 @@
             "tb-cloud-vm-8": {
                 "count": 2,
                 "cpu_availability": [
-                    "0",
-                    "8"
+                    "2",
+                    "5",
+                    "7"
                 ],
                 "memory_availability": [
-                    "0G",
-                    "32G"
+                    "2G",
+                    "16G",
+                    "27.68G"
                 ],
                 "bandwidth_utilization": [
                     "0",
@@ -56,12 +58,13 @@
             "tb-edge-vm-2": {
                 "count": 2,
                 "cpu_availability": [
-                    "0",
+                    "1",
                     "2"
                 ],
                 "memory_availability": [
-                    "0G",
-                    "8G"
+                    "1.3G",
+                    "4.3G",
+                    "7.65G"
                 ],
                 "bandwidth_utilization": [
                     "0",
@@ -71,12 +74,13 @@
             "tb-edge-vm-4": {
                 "count": 2,
                 "cpu_availability": [
-                    "0",
+                    "2",
                     "4"
                 ],
                 "memory_availability": [
-                    "0G",
-                    "16G"
+                    "2G",
+                    "8G",
+                    "14G"
                 ],
                 "bandwidth_utilization": [
                     "0",
@@ -88,12 +92,10 @@
             "tb-client-vm-2": {
                 "count": 1,
                 "cpu_availability": [
-                    "0",
                     "2"
                 ],
                 "memory_availability": [
-                    "0G",
-                    "8G"
+                    "7.65G"
                 ],
                 "bandwidth_utilization": [
                     "0",

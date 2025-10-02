@@ -48,7 +48,7 @@ class MicroserviceMaskEnv(gym.Env):
             "Node_memory_availability": spaces.Box(low=0, high=16, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth_usage": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
             # "Node_bandwidth": spaces.Box(low=0, high=1000, shape=(num_nodes,), dtype=np.float32),
-            # "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
+            "Node_layer": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
             # "Node_cpu_type": spaces.Box(low=0, high=3, shape=(num_nodes,), dtype=np.int32),
             "Pod_node_id": spaces.MultiDiscrete([num_nodes+1] * num_pods),  # Current node of each microservice
             # "Pod_layer": spaces.Box(low=0, high=4, shape=(num_pods,), dtype=np.int32),
@@ -59,10 +59,10 @@ class MicroserviceMaskEnv(gym.Env):
             # "client_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "edge_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
             # "cloud_latency": spaces.Box(low=0, high=500, shape=(3,), dtype=np.float32),
-            # "Layer_latency": spaces.Box(low=0, high=300, shape=(1,), dtype=np.float32),
+            "Layer_latency": spaces.Box(low=0, high=500, shape=(1,), dtype=np.float32),
             # "Cur_latency": spaces.Box(low=0, high=1000, shape=(1,), dtype=np.float32),
             # "Latency": spaces.Box(low=0, high=200, shape=(1,), dtype=np.float32),
-            # "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
+            "time_step": spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32)
         })
 
         # "Node_cpu_type": spaces.MultiDiscrete([4] * num_nodes),
@@ -75,7 +75,7 @@ class MicroserviceMaskEnv(gym.Env):
         '''Reset simulator, this happened during the end of the episode'''
         self.isDone = False
         self.episode_steps = 0
-        self.cloud_latency = random.uniform(50, 50)
+        self.cloud_latency = random.uniform(50, 500)
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
         self._init_valid_simulator(self.replica_cnt)
@@ -113,13 +113,13 @@ class MicroserviceMaskEnv(gym.Env):
             # "Node_id": np.array([node.node_id for node in self.nodes], dtype=np.int32),
             "Node_cpu_availability": np.array([node.cpu_availability for node in self.nodes], dtype=np.float32),
             "Node_memory_availability": np.array([node.memory_availability for node in self.nodes], dtype=np.float32),
-            # "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
+            "Layer_latency": np.array([self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
             # "Latency": np.array([self.latency_func()], dtype=np.float32),
             # "Cur_latency": np.array([self.latency_func()], dtype=np.float32),
             # "Node_cpu_type": np.array([int(node.cpu_type) for node in self.nodes], dtype=np.int32),
             # "Node_bandwidth": np.array([node.bandwidth for node in self.nodes], dtype=np.float32),
             # "Node_bandwidth_usage": np.array([node.bandwidth_usage for node in self.nodes], dtype=np.float32),
-            # "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
+            "Node_layer": np.array([layer_map[node.layer] for node in self.nodes], dtype=np.int32),
             # "client_latency": np.array([self.simulator.get_latency_between_layers("client", "client"),
             #                             self.simulator.get_latency_between_layers("client", "edge"),
             #                             self.simulator.get_latency_between_layers("client", "cloud")], dtype=np.float32),
@@ -143,9 +143,9 @@ class MicroserviceMaskEnv(gym.Env):
         state = {
             **nodes_state,
             **ms_state,
-            # "time_step": np.array([self.episode_steps], dtype=np.int32)
+            "time_step": np.array([self.episode_steps], dtype=np.int32)
         }
-        logger.info(f"state: {state}")
+        # logger.info(f"state: {state}")
         return state
 
     def set_cloud_latency(self, latency):
@@ -205,7 +205,7 @@ class MicroserviceMaskEnv(gym.Env):
             if self.is_testing:
                 self.simulator.output_simulator_status_to_file("./logs/test_end.json")
         else:
-            reward -= self.step_panelty
+            reward -= self.step_panelty * self.episode_steps
         state = self._get_state() if not done else None
         self.isDone = done
         return state, reward, done, False, {"terminal_observation": state}
@@ -268,7 +268,7 @@ class MicroserviceMaskEnv(gym.Env):
                     mask.append(True)
                 else:
                     mask.append(False)
-                logger.info(f"Node {node.node_name} Pod {pod.get_name()} Mask: {mask[-1]}\n")
+                # logger.info(f"Node {node.node_name} Pod {pod.get_name()} Mask: {mask[-1]}\n")
         mask.append(True) # Stop action is always valid
 
         return mask

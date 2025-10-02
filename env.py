@@ -66,7 +66,7 @@ class MicroserviceEnv(gym.Env):
     def reset(self, seed=None, options=None):
         '''Reset simulator, this happened during the end of the episode'''
         self.episode_steps = 0
-        self.cloud_latency = 50
+        self.cloud_latency = None
         # if self.episode % self.cluster_reset_interval_by_episode == 0:
         '''重新初始化一个simulator状态'''
         self._init_valid_simulator()
